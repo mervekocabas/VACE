@@ -21,10 +21,11 @@ def draw_pose(pose, H, W, use_hand=False, use_body=False, use_face=False):
     candidate = bodies['candidate']
     subset = bodies['subset']
     canvas = np.zeros(shape=(H, W, 3), dtype=np.uint8)
-
+    
     if use_body:
         canvas = util.draw_bodypose(canvas, candidate, subset)
     if use_hand:
+        import ipdb; ipdb.set_trace()
         canvas = util.draw_handpose(canvas, hands)
     if use_face:
         canvas = util.draw_facepose(canvas, faces)
@@ -42,7 +43,6 @@ class PoseAnnotator:
         self.use_body = cfg.get('USE_BODY', True)
         self.use_face = cfg.get('USE_FACE', True)
         self.use_hand = cfg.get('USE_HAND', True)
-        import ipdb; ipdb.set_trace()
 
     @torch.no_grad()
     @torch.inference_mode
