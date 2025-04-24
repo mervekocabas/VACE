@@ -118,12 +118,12 @@ class PoseAnnotator:
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.use_body, self.use_face, self.use_hand = True, True, False 
+        self.use_body, self.use_face, self.use_hand = True, True, True
     @torch.no_grad()
     @torch.inference_mode
     def forward(self, image):
         ret_data, det_result = super().forward(image)
-        return ret_data['detected_map_bodyface']
+        return ret_data['detected_map_handbodyface']
 
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
