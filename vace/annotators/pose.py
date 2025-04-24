@@ -42,6 +42,7 @@ class PoseAnnotator:
         self.use_body = cfg.get('USE_BODY', True)
         self.use_face = cfg.get('USE_FACE', True)
         self.use_hand = cfg.get('USE_HAND', True)
+        self.use_hand = True
 
     @torch.no_grad()
     @torch.inference_mode
@@ -119,8 +120,7 @@ class PoseAnnotator:
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg):
         super().__init__(cfg)
-        #self.use_body, self.use_face, self.use_hand = True, True, False 
-        self.use_body, self.use_face, self.use_hand = True, True, True #annotate hand too 
+        self.use_body, self.use_face, self.use_hand = True, True, False 
     @torch.no_grad()
     @torch.inference_mode
     def forward(self, image):
