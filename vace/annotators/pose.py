@@ -42,7 +42,7 @@ class PoseAnnotator:
         self.use_body = cfg.get('USE_BODY', True)
         self.use_face = cfg.get('USE_FACE', True)
         self.use_hand = cfg.get('USE_HAND', True)
-        import ipbd; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
 
     @torch.no_grad()
     @torch.inference_mode
