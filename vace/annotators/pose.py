@@ -127,10 +127,10 @@ class PoseBodyFaceAnnotator(PoseAnnotator):
 
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
-    self.use_body, self.use_face, self.use_hand = True, True, True
     def forward(self, frames):
         ret_frames = []
         for frame in frames:
+            import ipdb; ipdb.set_trace()
             anno_frame = super().forward(np.array(frame))
             ret_frames.append(anno_frame)
         return ret_frames
