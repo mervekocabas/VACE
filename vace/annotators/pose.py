@@ -21,11 +21,9 @@ def draw_pose(pose, H, W, use_hand=False, use_body=False, use_face=False):
     candidate = bodies['candidate']
     subset = bodies['subset']
     canvas = np.zeros(shape=(H, W, 3), dtype=np.uint8)
-    import ipdb; ipdb.set_trace()
     if use_body:
         canvas = util.draw_bodypose(canvas, candidate, subset)
     if use_hand:
-        import ipdb; ipdb.set_trace()
         canvas = util.draw_handpose(canvas, hands)
     if use_face:
         canvas = util.draw_facepose(canvas, faces)
@@ -84,7 +82,6 @@ class PoseAnnotator:
             pose = dict(bodies=bodies, hands=hands, faces=faces)
 
             ret_data = {}
-            import ipdb; ipdb.set_trace()
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
                 detected_map_body = cv2.resize(detected_map_body[..., ::-1], (ori_w, ori_h),
@@ -130,6 +127,7 @@ class PoseBodyFaceAnnotator(PoseAnnotator):
 
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
+    self.use_body, self.use_face, self.use_hand = True, True, True
     def forward(self, frames):
         ret_frames = []
         for frame in frames:
