@@ -84,6 +84,7 @@ class PoseAnnotator:
             pose = dict(bodies=bodies, hands=hands, faces=faces)
 
             ret_data = {}
+            import ipdb; ipdb.set_trace()
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
                 detected_map_body = cv2.resize(detected_map_body[..., ::-1], (ori_w, ori_h),
