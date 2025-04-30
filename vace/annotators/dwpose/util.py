@@ -107,6 +107,8 @@ def draw_bodypose(canvas, candidate, subset):
             x = int(x * W)
             y = int(y * H)
             cv2.circle(canvas, (int(x), int(y)), 4, colors[i], thickness=-1)
+            cv2.putText(canvas, str(index), (x + 5, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.4, (255, 255, 255), 1, cv2.LINE_AA)  # White index number
 
     return canvas
 
