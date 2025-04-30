@@ -149,8 +149,8 @@ def draw_facepose(canvas, all_lmks):
             x, y = lmk
             x = int(x * W)
             y = int(y * H)
-            if x > eps and y > eps:
-                cv2.circle(canvas, (x, y), 3, (255, 255, 255), thickness=-1)
+            #if x > eps and y > eps:
+                #cv2.circle(canvas, (x, y), 3, (255, 255, 255), thickness=-1)
     return canvas
 
 
