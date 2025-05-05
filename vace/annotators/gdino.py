@@ -11,9 +11,9 @@ from .utils import convert_to_numpy
 class GDINOAnnotator:
     def __init__(self, cfg, device=None):
         try:
-            import ipdb; ipdb.set_trace()
+     
             from groundingdino.util.inference import Model, load_model, load_image, predict
-            import ipdb; ipdb.set_trace()
+      
         except:
             import warnings
             warnings.warn("please pip install groundingdino package, or you can refer to models/VACE-Annotators/gdino/groundingdino-0.1.0-cp310-cp310-linux_x86_64.whl")
