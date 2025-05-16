@@ -313,7 +313,6 @@ def get_annotator_instance(anno_cfg):
     class_name = anno_cfg.pop("NAME")
     input_params = anno_cfg.pop("INPUTS")
     output_params = anno_cfg.pop("OUTPUTS")
-    import ipdb; ipdb.set_trace()
     anno_ins = getattr(annotators, class_name)(cfg=anno_cfg)
     return {"inputs": input_params, "outputs": output_params, "anno_ins": anno_ins}
 
