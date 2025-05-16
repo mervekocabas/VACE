@@ -13,6 +13,7 @@ class PromptExtendAnnotator:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device is None else device
         self.device_id = self.device.index if self.device.type == 'cuda' else None
         rank = self.device_id if self.device_id is not None else 0
+        import ipdb; ipdb.set_trace()
         if self.mode == "dashscope":
             self.prompt_expander = DashScopePromptExpander(
                 model_name=self.model_name, is_vl=self.is_vl)
