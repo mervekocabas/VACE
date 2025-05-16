@@ -44,6 +44,7 @@ def validate_args(args):
         args.sample_shift = 8.0
 
     # The default number of frames are 1 for text-to-image tasks and 81 for other tasks.
+    print(args.frame_num)
     if args.frame_num is None:
         args.frame_num = 81
 
@@ -299,7 +300,7 @@ def main(args):
             save_dir = args.save_dir
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
-
+        print(cfg.sample_fps)
         save_file = os.path.join(save_dir, 'out_video.mp4')
         cache_video(
             tensor=video[None],
