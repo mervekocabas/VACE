@@ -277,6 +277,7 @@ def main(args):
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
 
     logging.info(f"Generating video...")
+    print(args.frame_num)
     video = wan_vace.generate(
         args.prompt,
         src_video,
@@ -301,6 +302,7 @@ def main(args):
             os.makedirs(save_dir)
         print(cfg.sample_fps)
         save_file = os.path.join(save_dir, 'out_video.mp4')
+        print(cfg.sample_fps)
         cache_video(
             tensor=video[None],
             save_file=save_file,
@@ -312,6 +314,7 @@ def main(args):
         ret_data['out_video'] = save_file
 
         save_file = os.path.join(save_dir, 'src_video.mp4')
+        print(cfg.sample_fps)
         cache_video(
             tensor=src_video[0][None],
             save_file=save_file,
