@@ -44,7 +44,6 @@ def validate_args(args):
         args.sample_shift = 8.0
 
     # The default number of frames are 1 for text-to-image tasks and 81 for other tasks.
-    print(args.frame_num)
     if args.frame_num is None:
         args.frame_num = 81
 
