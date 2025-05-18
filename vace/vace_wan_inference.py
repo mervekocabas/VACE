@@ -305,7 +305,7 @@ def main(args):
     ret_data = {}
     if rank == 0:
         if args.save_dir is None:
-            save_dir = os.path.join('results', args.model_name, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
+            save_dir = os.path.join('results', args.model_name, args.src_video, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
         else:
             save_dir = args.save_dir
         if not os.path.exists(save_dir):
