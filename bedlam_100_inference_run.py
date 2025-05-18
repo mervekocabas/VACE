@@ -66,6 +66,7 @@ def run_inference(idx, file_name, prompt):
         "--ulysses_size", "2",
         "--ring_size", "2",
         "--size", "720p",
+        "--model_name", "vace-14B",
         "--ckpt_dir", "models/VACE-Wan2.1-14B",
         "--src_video", str(src_video),
         "--prompt", prompt,
