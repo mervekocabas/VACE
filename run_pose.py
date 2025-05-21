@@ -17,8 +17,8 @@ def main():
     # Configuration for pose task
     task_cfg = {
         "NAME": "PoseBodyHandVideoKeypointExtractor",
-        "DETECTION_MODEL": "vace/annotators/ckpts/yolox_l.onnx",
-        "POSE_MODEL": "vace/annotators/ckpts/dw-ll_ucoco_384.onnx",
+        "DETECTION_MODEL": "models/VACE-Annotators/pose/yolox_l.onnx",
+        "POSE_MODEL": "models/VACE-Annotators/pose/dw-ll_ucoco_384.onnx",
         "RESIZE_SIZE": 1024,
         "USE_BODY": True,
         "USE_FACE": False,
