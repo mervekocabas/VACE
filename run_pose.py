@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 
 # Import necessary modules from VACE
-from vace.annotators.pose import PoseBodyHandVideoKeypointExtractor
+from vace.annotators.pose import PoseBodyHandVideoExtractor
 from vace.annotators.utils import read_video_frames, save_one_video
 
 def main():
@@ -50,7 +50,7 @@ def main():
 
     # Initialize pose extractor
     print("Initializing pose extractor...")
-    pose_extractor = PoseBodyHandVideoKeypointExtractor(
+    pose_extractor = PoseBodyHandVideoExtractor(
         cfg=task_cfg,
         device=f'cuda:{os.getenv("RANK", 0)}'
     )
