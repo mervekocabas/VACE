@@ -81,6 +81,8 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
+            
+            import ipdb; ipdb.set_trace()
 
             ret_data = {}
             if self.use_body:
