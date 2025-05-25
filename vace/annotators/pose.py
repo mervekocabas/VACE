@@ -128,51 +128,57 @@ class PoseAnnotator:
         data = []
         
         # Process body keypoints
-        import ipdb; ipdb.set_trace()
         body_candidate = pose['bodies']['candidate']
         body_subset = pose['bodies']['subset']
-        for i in range(len(body_candidate)):
-            x, y, conf = body_candidate[i]
-            visibility = 1 if body_subset[i] != -1 else 0
-            data.append({
-                'type': 'body',
-                'keypoint_id': i,
-                'x': x,
-                'y': y,
-                'confidence': conf,
-                'visibility': visibility
-            })
+        
+        # Process each person's keypoints
+        for person_idx in range(len(body_subset)):
+            for keypoint_idx in range(18):  # 18 body keypoints
+                x, y = body_candidate[person_idx * 18 + keypoint_idx]
+                visibility = 1 if body_subset[person_idx][keypoint_idx] != -1 else 0
+                data.append({
+                    'person_id': person_idx,
+                    'type': 'body',
+                    'keypoint_id': keypoint_idx,
+                    'x': x,
+                    'y': y,
+                    'visibility': visibility
+                })
         
         # Process face keypoints
         faces = pose['faces']
         for i in range(len(faces)):
-            x, y, conf = faces[i]
-            visibility = 1 if conf > 0.3 else 0
+            x, y = faces[i]
+            visibility = 1 if x != -1 and y != -1 else 0
             data.append({
+                'person_id': 0,  # Assuming face belongs to first person
                 'type': 'face',
                 'keypoint_id': i,
                 'x': x,
                 'y': y,
-                'confidence': conf,
                 'visibility': visibility
             })
         
         # Process hand keypoints
         hands = pose['hands']
         for i in range(len(hands)):
-            x, y, conf = hands[i]
-            visibility = 1 if conf > 0.3 else 0
+            x, y = hands[i]
+            visibility = 1 if x != -1 and y != -1 else 0
             data.append({
+                'person_id': 0,  # Assuming hands belong to first person
                 'type': 'hand',
                 'keypoint_id': i,
                 'x': x,
                 'y': y,
-                'confidence': conf,
                 'visibility': visibility
             })
         
         # Create DataFrame and save to CSV
         df = pd.DataFrame(data)
+        
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
         df.to_csv(output_path, index=False)
         return df
 
