@@ -74,7 +74,6 @@ def demo_postprocess(outputs, img_size, p6=False):
 
     grids = np.concatenate(grids, 1)
     expanded_strides = np.concatenate(expanded_strides, 1)
-    import ipdb; ipdb.set_trace()
     outputs[..., :2] = (outputs[..., :2] + grids) * expanded_strides
     outputs[..., 2:4] = np.exp(outputs[..., 2:4]) * expanded_strides
 
