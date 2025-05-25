@@ -2,10 +2,10 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
 import os
-
 import cv2
 import torch
 import numpy as np
+import pandas as pd
 from .dwpose import util
 from .dwpose.wholebody import Wholebody, HWC3, resize_image
 from .utils import convert_to_numpy
@@ -82,8 +82,6 @@ class PoseAnnotator:
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
             
-            import ipdb; ipdb.set_trace()
-
             ret_data = {}
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
@@ -115,7 +113,67 @@ class PoseAnnotator:
                 det_result[..., ::2] *= h_ratio
                 det_result[..., 1::2] *= w_ratio
                 det_result = det_result.astype(np.int32)
+            self.save_pose_to_csv(pose, 'processed/visibility_csv/pose.csv')
             return ret_data, det_result
+
+    def save_pose_to_csv(self, pose, output_path):
+        """
+        Save pose keypoints data to a CSV file.
+        
+        Args:
+            pose (dict): Dictionary containing body, hand, and face keypoints
+            output_path (str): Path to save the CSV file
+        """
+        # Create lists to store data
+        data = []
+        
+        # Process body keypoints
+        body_candidate = pose['bodies']['candidate']
+        body_subset = pose['bodies']['subset']
+        for i in range(len(body_candidate)):
+            x, y, conf = body_candidate[i]
+            visibility = 1 if body_subset[i] != -1 else 0
+            data.append({
+                'type': 'body',
+                'keypoint_id': i,
+                'x': x,
+                'y': y,
+                'confidence': conf,
+                'visibility': visibility
+            })
+        
+        # Process face keypoints
+        faces = pose['faces']
+        for i in range(len(faces)):
+            x, y, conf = faces[i]
+            visibility = 1 if conf > 0.3 else 0
+            data.append({
+                'type': 'face',
+                'keypoint_id': i,
+                'x': x,
+                'y': y,
+                'confidence': conf,
+                'visibility': visibility
+            })
+        
+        # Process hand keypoints
+        hands = pose['hands']
+        for i in range(len(hands)):
+            x, y, conf = hands[i]
+            visibility = 1 if conf > 0.3 else 0
+            data.append({
+                'type': 'hand',
+                'keypoint_id': i,
+                'x': x,
+                'y': y,
+                'confidence': conf,
+                'visibility': visibility
+            })
+        
+        # Create DataFrame and save to CSV
+        df = pd.DataFrame(data)
+        df.to_csv(output_path, index=False)
+        return df
 
 
 class PoseBodyFaceAnnotator(PoseAnnotator):
