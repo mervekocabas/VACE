@@ -128,6 +128,7 @@ class PoseAnnotator:
         data = []
         
         # Process body keypoints
+        import ipdb; ipdb.set_trace()
         body_candidate = pose['bodies']['candidate']
         body_subset = pose['bodies']['subset']
         for i in range(len(body_candidate)):
