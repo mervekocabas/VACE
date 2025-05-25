@@ -145,8 +145,10 @@ class PoseAnnotator:
                     'visibility': visibility
                 })
         
+        
         # Process face keypoints
         faces = pose['faces']
+        import ipdb; ipdb.set_trace()
         for i in range(len(faces)):
             x, y = faces[i]
             visibility = 1 if x != -1 and y != -1 else 0
@@ -161,6 +163,7 @@ class PoseAnnotator:
         
         # Process hand keypoints
         hands = pose['hands']
+        import ipdb; ipdb.set_trace()
         for i in range(len(hands)):
             x, y = hands[i]
             visibility = 1 if x != -1 and y != -1 else 0
