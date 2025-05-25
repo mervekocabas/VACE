@@ -100,10 +100,8 @@ def preprocess(img, input_size, swap=(2, 0, 1)):
 def inference_detector(session, oriImg):
     input_shape = (640,640)
     img, ratio = preprocess(oriImg, input_shape)
-    import ipdb; ipdb.set_trace()
     ort_inputs = {session.get_inputs()[0].name: img[None, :, :, :]}
     output = session.run(None, ort_inputs)
-    import ipdb; ipdb.set_trace()
     predictions = demo_postprocess(output[0], input_shape)[0]
 
     boxes = predictions[:, :4]
