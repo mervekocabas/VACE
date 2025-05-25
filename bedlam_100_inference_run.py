@@ -44,7 +44,7 @@ if __name__ == "__main__":
         pool.map(run_inference, inputs)
 '''
 
-'''
+
 import pandas as pd
 import subprocess
 from pathlib import Path
@@ -78,11 +78,12 @@ def run_inference(idx, file_name, prompt):
     subprocess.run(cmd, env=env)
 
 if __name__ == "__main__":
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
+    csv_path = "./vace_bedlam_100_dataset/metadata.csv"
     df = pd.read_csv(csv_path)
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"], row["text"])
+        
 '''     
 import pandas as pd
 import subprocess
@@ -120,3 +121,4 @@ if __name__ == "__main__":
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"])
+'''
