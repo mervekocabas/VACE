@@ -56,7 +56,6 @@ class PoseAnnotator:
         H, W, C = ori_img.shape
         with torch.no_grad():
             candidate, subset, det_result = self.pose_estimation(ori_img)
-            import ipdb; ipdb.set_trace()
             nums, keys, locs = candidate.shape
             candidate[..., 0] /= float(W)
             candidate[..., 1] /= float(H)
@@ -72,7 +71,7 @@ class PoseAnnotator:
 
             un_visible = subset < 0.3
             candidate[un_visible] = -1
-
+            self.save_to_csv(candidate)
             foot = candidate[:, 18:24]
 
             faces = candidate[:, 24:92]
@@ -116,6 +115,33 @@ class PoseAnnotator:
                 det_result = det_result.astype(np.int32)
             
             return ret_data, det_result
+        
+    def save_to_csv(self, candidate):
+        # Create a DataFrame from the candidate array
+        # Reshape the candidate array to have keypoints as rows
+        num_people, num_keypoints, _ = candidate.shape
+        reshaped_candidate = candidate.reshape(-1, 3)  # Reshape to (num_people * num_keypoints, 3)
+        
+        # Create column names
+        columns = ['person_id', 'keypoint_id', 'x', 'y', 'confidence']
+        
+        # Create data for DataFrame
+        data = []
+        for i in range(num_people):
+            for j in range(num_keypoints):
+                x, y, conf = reshaped_candidate[i * num_keypoints + j]
+                if conf > 0:  # Only save visible keypoints
+                    data.append([i, j, x, y, conf])
+        
+        # Create DataFrame
+        df = pd.DataFrame(data, columns=columns)
+        
+        # Save to CSV
+        output_dir = './results/pose_data'
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
+        output_file = os.path.join(output_dir, f'pose_keypoints_{timestamp}.csv')
+        df.to_csv(output_file, index=False)\
 
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg, device=None):
