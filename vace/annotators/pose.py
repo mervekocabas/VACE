@@ -119,6 +119,7 @@ class PoseAnnotator:
     def save_to_csv(self, candidate):
         # Create a DataFrame from the candidate array
         # Reshape the candidate array to have keypoints as rows
+        import ipdb; ipdb.set_trace()
         num_people, num_keypoints, _ = candidate.shape
         reshaped_candidate = candidate.reshape(-1, 3)  # Reshape to (num_people * num_keypoints, 3)
         
