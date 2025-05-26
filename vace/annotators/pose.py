@@ -56,6 +56,7 @@ class PoseAnnotator:
         H, W, C = ori_img.shape
         with torch.no_grad():
             candidate, subset, det_result = self.pose_estimation(ori_img)
+            import ipdb; ipdb.set_trace()
             nums, keys, locs = candidate.shape
             candidate[..., 0] /= float(W)
             candidate[..., 1] /= float(H)
@@ -113,78 +114,8 @@ class PoseAnnotator:
                 det_result[..., ::2] *= h_ratio
                 det_result[..., 1::2] *= w_ratio
                 det_result = det_result.astype(np.int32)
-            self.save_pose_to_csv(pose, 'processed/visibility_csv/pose.csv')
+            
             return ret_data, det_result
-
-    def save_pose_to_csv(self, pose, output_path):
-        """
-        Save pose keypoints data to a CSV file.
-        
-        Args:
-            pose (dict): Dictionary containing body, hand, and face keypoints
-            output_path (str): Path to save the CSV file
-        """
-        # Create lists to store data
-        data = []
-        
-        # Process body keypoints
-        body_candidate = pose['bodies']['candidate']
-        body_subset = pose['bodies']['subset']
-        
-        # Process each person's keypoints
-        for person_idx in range(len(body_subset)):
-            for keypoint_idx in range(18):  # 18 body keypoints
-                x, y = body_candidate[person_idx * 18 + keypoint_idx]
-                visibility = 1 if body_subset[person_idx][keypoint_idx] != -1 else 0
-                data.append({
-                    'person_id': person_idx,
-                    'type': 'body',
-                    'keypoint_id': keypoint_idx,
-                    'x': x,
-                    'y': y,
-                    'visibility': visibility
-                })
-        
-        
-        # Process face keypoints
-        faces = pose['faces']
-        import ipdb; ipdb.set_trace()
-        for i in range(len(faces)):
-            x, y = faces[i]
-            visibility = 1 if x != -1 and y != -1 else 0
-            data.append({
-                'person_id': 0,  # Assuming face belongs to first person
-                'type': 'face',
-                'keypoint_id': i,
-                'x': x,
-                'y': y,
-                'visibility': visibility
-            })
-        
-        # Process hand keypoints
-        hands = pose['hands']
-        import ipdb; ipdb.set_trace()
-        for i in range(len(hands)):
-            x, y = hands[i]
-            visibility = 1 if x != -1 and y != -1 else 0
-            data.append({
-                'person_id': 0,  # Assuming hands belong to first person
-                'type': 'hand',
-                'keypoint_id': i,
-                'x': x,
-                'y': y,
-                'visibility': visibility
-            })
-        
-        # Create DataFrame and save to CSV
-        df = pd.DataFrame(data)
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
-        df.to_csv(output_path, index=False)
-        return df
-
 
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg, device=None):
