@@ -145,7 +145,7 @@ class PoseAnnotator:
         df = pd.DataFrame(data, columns=['body_id', 'keypoint_id', 'x', 'y', 'subset'])
         
         # Save to CSV
-        output_dir = './results/pose_data'
+        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'results', 'pose_data')
         os.makedirs(output_dir, exist_ok=True)
         timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
         output_file = os.path.join(output_dir, f'pose_keypoints_{timestamp}.csv')
