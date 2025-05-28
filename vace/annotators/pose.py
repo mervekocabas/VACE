@@ -166,7 +166,7 @@ class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
     def forward(self, frames):
         ret_frames = []
         for frame_id, frame in enumerate(frames):
-            anno_frame = super().forward(np.array(frame))
+            anno_frame = super().forward(np.array(frame), frame_id)
             ret_frames.append(anno_frame)
         return ret_frames
 
@@ -185,6 +185,6 @@ class PoseBodyVideoAnnotator(PoseBodyAnnotator):
     def forward(self, frames):
         ret_frames = []
         for frame_id, frame in enumerate(frames):
-            anno_frame = super().forward(np.array(frame))
+            anno_frame = super().forward(np.array(frame), frame_id)
             ret_frames.append(anno_frame)
         return ret_frames
