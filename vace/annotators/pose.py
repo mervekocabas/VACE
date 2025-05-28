@@ -118,24 +118,28 @@ class PoseAnnotator:
         
     def save_to_csv(self, pose):
         # Get the body data from the pose dictionary
-        body = pose['bodies']['candidate']
-        subset = pose['bodies']['subset']
-        num_people, num_keypoints, _ = body.shape
+        body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
+        subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
         
         # Create data for DataFrame
         data = []
+        num_people = subset.shape[0]  # from subset shape
+        num_keypoints = subset.shape[1]  # from subset shape
+        
         for person_id in range(num_people):
             for keypoint_id in range(num_keypoints):
-                x, y, conf = body[person_id, keypoint_id]
+                # Get x,y coordinates for this person's keypoint
+                idx = person_id * num_keypoints + keypoint_id
+                x, y = body[idx]
                 subset_val = subset[person_id, keypoint_id]
-                if conf > 0:  # Only save visible keypoints
-                    data.append([
-                        person_id,  # body number
-                        keypoint_id,  # keypoint number
-                        x,  # keypoint x
-                        y,  # keypoint y
-                        subset_val  # subset value
-                    ])
+                
+                data.append([
+                    person_id,  # body number (0-3)
+                    keypoint_id,  # keypoint number (0-17)
+                    x,  # keypoint x
+                    y,  # keypoint y
+                    subset_val  # subset value
+                ])
         
         # Create DataFrame
         df = pd.DataFrame(data, columns=['body_id', 'keypoint_id', 'x', 'y', 'subset'])
