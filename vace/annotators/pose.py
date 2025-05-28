@@ -149,8 +149,13 @@ class PoseAnnotator:
         output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data')
         os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, f'pose_keypoints.csv')
-        print(f"Saving pose keypoints to {output_file}")
-        df.to_csv(output_file, index=False)
+        
+        # Append to existing file or create new one
+        if os.path.exists(output_file):
+            df.to_csv(output_file, mode='a', header=False, index=False)
+        else:
+            df.to_csv(output_file, index=False)
+            print(f"Created new pose keypoints file at {output_file}")
 
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg, device=None):
