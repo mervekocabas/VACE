@@ -71,7 +71,7 @@ class PoseAnnotator:
 
             un_visible = subset < 0.3
             candidate[un_visible] = -1
-            #self.save_to_csv(candidate)
+            
             foot = candidate[:, 18:24]
 
             faces = candidate[:, 24:92]
@@ -81,7 +81,7 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
-            import ipdb; ipdb.set_trace()
+            self.save_to_csv(pose)
             ret_data = {}
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
@@ -116,33 +116,36 @@ class PoseAnnotator:
             
             return ret_data, det_result
         
-    def save_to_csv(self, candidate):
-        # Create a DataFrame from the candidate array
-        # Reshape the candidate array to have keypoints as rows
-        import ipdb; ipdb.set_trace()
-        num_people, num_keypoints, _ = candidate.shape
-        reshaped_candidate = candidate.reshape(-1, 3)  # Reshape to (num_people * num_keypoints, 3)
-        
-        # Create column names
-        columns = ['person_id', 'keypoint_id', 'x', 'y', 'confidence']
+    def save_to_csv(self, pose):
+        # Get the body data from the pose dictionary
+        body = pose['bodies']['candidate']
+        subset = pose['bodies']['subset']
+        num_people, num_keypoints, _ = body.shape
         
         # Create data for DataFrame
         data = []
-        for i in range(num_people):
-            for j in range(num_keypoints):
-                x, y, conf = reshaped_candidate[i * num_keypoints + j]
+        for person_id in range(num_people):
+            for keypoint_id in range(num_keypoints):
+                x, y, conf = body[person_id, keypoint_id]
+                subset_val = subset[person_id, keypoint_id]
                 if conf > 0:  # Only save visible keypoints
-                    data.append([i, j, x, y, conf])
+                    data.append([
+                        person_id,  # body number
+                        keypoint_id,  # keypoint number
+                        x,  # keypoint x
+                        y,  # keypoint y
+                        subset_val  # subset value
+                    ])
         
         # Create DataFrame
-        df = pd.DataFrame(data, columns=columns)
+        df = pd.DataFrame(data, columns=['body_id', 'keypoint_id', 'x', 'y', 'subset'])
         
         # Save to CSV
         output_dir = './results/pose_data'
         os.makedirs(output_dir, exist_ok=True)
         timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
         output_file = os.path.join(output_dir, f'pose_keypoints_{timestamp}.csv')
-        df.to_csv(output_file, index=False)\
+        df.to_csv(output_file, index=False)
 
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg, device=None):
