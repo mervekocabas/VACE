@@ -134,6 +134,7 @@ def main(args):
     caption = args.caption
     label = args.label
     save_fps = args.save_fps
+    import ipdb; ipdb.set_trace()
     input_filename = args.video
     # init class
     task_cfg = copy.deepcopy(VACE_PREPROCCESS_CONFIGS)[task_name]
