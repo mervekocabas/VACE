@@ -149,6 +149,7 @@ class PoseAnnotator:
         os.makedirs(output_dir, exist_ok=True)
         timestamp = pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')
         output_file = os.path.join(output_dir, f'pose_keypoints_{timestamp}.csv')
+        print(f"Saving pose keypoints to {output_file}")
         df.to_csv(output_file, index=False)
 
 class PoseBodyFaceAnnotator(PoseAnnotator):
