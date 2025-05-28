@@ -45,12 +45,12 @@ class PoseAnnotator:
 
     @torch.no_grad()
     @torch.inference_mode
-    def forward(self, image, frame_id=0):
+    def forward(self, image, frame_id=0, input_filename=None):
         image = convert_to_numpy(image)
         input_image = HWC3(image[..., ::-1])
-        return self.process(resize_image(input_image, self.resize_size), image.shape[:2], frame_id)
+        return self.process(resize_image(input_image, self.resize_size), image.shape[:2], frame_id, input_filename)
 
-    def process(self, ori_img, ori_shape, frame_id=0):
+    def process(self, ori_img, ori_shape, frame_id=0, input_filename=None):
         ori_h, ori_w = ori_shape
         ori_img = ori_img.copy()
         H, W, C = ori_img.shape
@@ -81,7 +81,7 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
-            self.save_to_csv(pose, frame_id)
+            self.save_to_csv(pose, frame_id, input_filename)
             ret_data = {}
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
@@ -116,7 +116,7 @@ class PoseAnnotator:
             
             return ret_data, det_result
         
-    def save_to_csv(self, pose, frame_id):
+    def save_to_csv(self, pose, frame_id, input_filename=None):
         # Get the body data from the pose dictionary
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
@@ -148,7 +148,13 @@ class PoseAnnotator:
         # Save to CSV
         output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data')
         os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, f'pose_keypoints.csv')
+        
+        # Create filename with input filename if provided
+        if input_filename:
+            input_basename = os.path.splitext(os.path.basename(input_filename))[0]
+            output_file = os.path.join(output_dir, f'pose_keypoints_{input_basename}.csv')
+        else:
+            output_file = os.path.join(output_dir, f'pose_keypoints.csv')
         
         # Append to existing file or create new one
         if os.path.exists(output_file):
@@ -163,16 +169,16 @@ class PoseBodyFaceAnnotator(PoseAnnotator):
         self.use_body, self.use_face, self.use_hand = True, True, False
     @torch.no_grad()
     @torch.inference_mode
-    def forward(self, image, frame_id=0):
-        ret_data, det_result = super().forward(image, frame_id)
+    def forward(self, image, frame_id=0, input_filename=None):
+        ret_data, det_result = super().forward(image, frame_id, input_filename)
         return ret_data['detected_map_bodyface']
 
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
-    def forward(self, frames):
+    def forward(self, frames, input_filename):
         ret_frames = []
         for frame_id, frame in enumerate(frames):
-            anno_frame = super().forward(np.array(frame), frame_id)
+            anno_frame = super().forward(np.array(frame), frame_id, input_filename)
             ret_frames.append(anno_frame)
         return ret_frames
 
@@ -182,15 +188,15 @@ class PoseBodyAnnotator(PoseAnnotator):
         self.use_body, self.use_face, self.use_hand = True, False, False
     @torch.no_grad()
     @torch.inference_mode
-    def forward(self, image, frame_id=0):
-        ret_data, det_result = super().forward(image, frame_id)
+    def forward(self, image, frame_id=0, input_filename=None):
+        ret_data, det_result = super().forward(image, frame_id, input_filename)
         return ret_data['detected_map_body']
 
 
 class PoseBodyVideoAnnotator(PoseBodyAnnotator):
-    def forward(self, frames):
+    def forward(self, frames, input_filename):
         ret_frames = []
         for frame_id, frame in enumerate(frames):
-            anno_frame = super().forward(np.array(frame), frame_id)
+            anno_frame = super().forward(np.array(frame), frame_id, input_filename)
             ret_frames.append(anno_frame)
         return ret_frames
