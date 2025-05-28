@@ -45,12 +45,12 @@ class PoseAnnotator:
 
     @torch.no_grad()
     @torch.inference_mode
-    def forward(self, image):
+    def forward(self, image, frame_id=0):
         image = convert_to_numpy(image)
         input_image = HWC3(image[..., ::-1])
-        return self.process(resize_image(input_image, self.resize_size), image.shape[:2])
+        return self.process(resize_image(input_image, self.resize_size), image.shape[:2], frame_id)
 
-    def process(self, ori_img, ori_shape):
+    def process(self, ori_img, ori_shape, frame_id=0):
         ori_h, ori_w = ori_shape
         ori_img = ori_img.copy()
         H, W, C = ori_img.shape
@@ -81,7 +81,7 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
-            self.save_to_csv(pose)
+            self.save_to_csv(pose, frame_id)
             ret_data = {}
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
@@ -116,7 +116,7 @@ class PoseAnnotator:
             
             return ret_data, det_result
         
-    def save_to_csv(self, pose):
+    def save_to_csv(self, pose, frame_id):
         # Get the body data from the pose dictionary
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
@@ -134,6 +134,7 @@ class PoseAnnotator:
                 subset_val = subset[person_id, keypoint_id]
                 
                 data.append([
+                    frame_id,  # frame number
                     person_id,  # body number (0-3)
                     keypoint_id,  # keypoint number (0-17)
                     x,  # keypoint x
@@ -142,10 +143,10 @@ class PoseAnnotator:
                 ])
         
         # Create DataFrame
-        df = pd.DataFrame(data, columns=['body_id', 'keypoint_id', 'x', 'y', 'subset'])
+        df = pd.DataFrame(data, columns=['frame_id', 'body_id', 'keypoint_id', 'x', 'y', 'subset'])
         
         # Save to CSV
-        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'processed', 'pose_data')
+        output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'results', 'pose_data')
         os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, f'pose_keypoints.csv')
         print(f"Saving pose keypoints to {output_file}")
@@ -157,15 +158,15 @@ class PoseBodyFaceAnnotator(PoseAnnotator):
         self.use_body, self.use_face, self.use_hand = True, True, False
     @torch.no_grad()
     @torch.inference_mode
-    def forward(self, image):
-        ret_data, det_result = super().forward(image)
+    def forward(self, image, frame_id=0):
+        ret_data, det_result = super().forward(image, frame_id)
         return ret_data['detected_map_bodyface']
 
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
     def forward(self, frames):
         ret_frames = []
-        for frame in frames:
+        for frame_id, frame in enumerate(frames):
             anno_frame = super().forward(np.array(frame))
             ret_frames.append(anno_frame)
         return ret_frames
@@ -176,15 +177,15 @@ class PoseBodyAnnotator(PoseAnnotator):
         self.use_body, self.use_face, self.use_hand = True, False, False
     @torch.no_grad()
     @torch.inference_mode
-    def forward(self, image):
-        ret_data, det_result = super().forward(image)
+    def forward(self, image, frame_id=0):
+        ret_data, det_result = super().forward(image, frame_id)
         return ret_data['detected_map_body']
 
 
 class PoseBodyVideoAnnotator(PoseBodyAnnotator):
     def forward(self, frames):
         ret_frames = []
-        for frame in frames:
+        for frame_id, frame in enumerate(frames):
             anno_frame = super().forward(np.array(frame))
             ret_frames.append(anno_frame)
         return ret_frames
