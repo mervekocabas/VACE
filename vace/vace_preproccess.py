@@ -134,7 +134,7 @@ def main(args):
     caption = args.caption
     label = args.label
     save_fps = args.save_fps
-    input_filename = args.input_filename
+    input_filename = args.video
     # init class
     task_cfg = copy.deepcopy(VACE_PREPROCCESS_CONFIGS)[task_name]
     class_name = task_cfg.pop("NAME")
