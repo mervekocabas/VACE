@@ -134,7 +134,7 @@ def main(args):
     caption = args.caption
     label = args.label
     save_fps = args.save_fps
-
+    input_filename = args.input_filename
     # init class
     task_cfg = copy.deepcopy(VACE_PREPROCCESS_CONFIGS)[task_name]
     class_name = task_cfg.pop("NAME")
@@ -214,7 +214,7 @@ def main(args):
 
     # processing
     pre_ins = getattr(annotators, class_name)(cfg=task_cfg, device=f'cuda:{os.getenv("RANK", 0)}')
-    results = pre_ins.forward(**input_data)
+    results = pre_ins.forward(**input_data, input_filename=input_filename)
 
     # output data
     save_fps = fps if fps is not None else save_fps
