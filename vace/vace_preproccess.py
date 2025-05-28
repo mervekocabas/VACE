@@ -134,8 +134,8 @@ def main(args):
     caption = args.caption
     label = args.label
     save_fps = args.save_fps
-    import ipdb; ipdb.set_trace()
     input_filename = args.video
+    
     # init class
     task_cfg = copy.deepcopy(VACE_PREPROCCESS_CONFIGS)[task_name]
     class_name = task_cfg.pop("NAME")
@@ -148,6 +148,7 @@ def main(args):
     if 'video' in input_params:
         assert video_path is not None, "Please set video or check configs"
         frames, fps, width, height, num_frames = read_video_frames(video_path.split(",")[0], use_type='cv2',  info=True)
+        import ipdb; ipdb.set_trace()
         assert frames is not None, "Video read error"
         input_data['frames'] = frames
         input_data['video'] = video_path
