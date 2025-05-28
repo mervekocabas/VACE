@@ -134,7 +134,6 @@ class PoseAnnotator:
                 subset_val = subset[person_id, keypoint_id]
                 
                 data.append([
-                    frame_id,  # frame number
                     person_id,  # body number (0-3)
                     keypoint_id,  # keypoint number (0-17)
                     x,  # keypoint x
@@ -143,12 +142,12 @@ class PoseAnnotator:
                 ])
         
         # Create DataFrame
-        df = pd.DataFrame(data, columns=['frame_id', 'body_id', 'keypoint_id', 'x', 'y', 'subset'])
+        df = pd.DataFrame(data, columns=['body_id', 'keypoint_id', 'x', 'y', 'subset'])
         
         # Save to CSV
         output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data')
         os.makedirs(output_dir, exist_ok=True)
-        output_file = os.path.join(output_dir, f'pose_keypoints.csv')
+        output_file = os.path.join(output_dir, f'pose_keypoints_{frame_id}.csv')
         print(f"Saving pose keypoints to {output_file}")
         df.to_csv(output_file, index=False)
 
