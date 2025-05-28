@@ -71,7 +71,7 @@ class PoseAnnotator:
 
             un_visible = subset < 0.3
             candidate[un_visible] = -1
-            self.save_to_csv(candidate)
+            #self.save_to_csv(candidate)
             foot = candidate[:, 18:24]
 
             faces = candidate[:, 24:92]
@@ -81,7 +81,7 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
-            
+            import ipdb; ipdb.set_trace()
             ret_data = {}
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
