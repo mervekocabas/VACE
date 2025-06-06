@@ -119,8 +119,6 @@ class PoseAnnotator:
     def save_to_csv(self, pose, frame_id, input_filename=None):
         # Get the body data from the pose dictionary
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
-        import ipdb; ipdb.set_trace()
-        hands = pose['hands']
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
         
         # Create data for DataFrame
@@ -141,9 +139,9 @@ class PoseAnnotator:
                     keypoint_id,  # keypoint number (0-17)
                     x,  # keypoint x
                     y,  # keypoint y
-                    subset_val  # subset value
+                    subset_val,  # subset value
                 ])
-        
+                
         # Create DataFrame
         df = pd.DataFrame(data, columns=['frame_id', 'body_id', 'keypoint_id', 'x', 'y', 'subset'])
         

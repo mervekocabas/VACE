@@ -148,7 +148,6 @@ def main(args):
     if 'video' in input_params:
         assert video_path is not None, "Please set video or check configs"
         frames, fps, width, height, num_frames = read_video_frames(video_path.split(",")[0], use_type='cv2',  info=True)
-        import ipdb; ipdb.set_trace()
         assert frames is not None, "Video read error"
         input_data['frames'] = frames
         input_data['video'] = video_path
@@ -215,6 +214,8 @@ def main(args):
                 input_data['mask_cfg'] = {"mode": args.maskaug_mode}
 
     # processing
+    import ipdb; ipdb.set_trace()
+
     pre_ins = getattr(annotators, class_name)(cfg=task_cfg, device=f'cuda:{os.getenv("RANK", 0)}')
     results = pre_ins.forward(**input_data, input_filename=input_filename)
 
