@@ -176,6 +176,7 @@ class PoseBodyFaceAnnotator(PoseAnnotator):
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
     def forward(self, frames, input_filename):
+        import ipdb; ipdb.set_trace()
         ret_frames = []
         for frame_id, frame in enumerate(frames):
             anno_frame = super().forward(np.array(frame), frame_id, input_filename)

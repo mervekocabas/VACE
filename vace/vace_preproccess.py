@@ -215,7 +215,6 @@ def main(args):
 
     # processing
     pre_ins = getattr(annotators, class_name)(cfg=task_cfg, device=f'cuda:{os.getenv("RANK", 0)}')
-    import ipdb; ipdb.set_trace()
     results = pre_ins.forward(**input_data, input_filename=input_filename)
 
     # output data
