@@ -214,9 +214,8 @@ def main(args):
                 input_data['mask_cfg'] = {"mode": args.maskaug_mode}
 
     # processing
-    import ipdb; ipdb.set_trace()
-
     pre_ins = getattr(annotators, class_name)(cfg=task_cfg, device=f'cuda:{os.getenv("RANK", 0)}')
+    import ipdb; ipdb.set_trace()
     results = pre_ins.forward(**input_data, input_filename=input_filename)
 
     # output data
