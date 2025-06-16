@@ -81,6 +81,7 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
+            import ipdb;ipdb.set_trace()
             self.save_to_csv(pose, frame_id, input_filename)
             ret_data = {}
             if self.use_body:
@@ -175,8 +176,12 @@ class PoseBodyFaceAnnotator(PoseAnnotator):
 
 
 class PoseBodyFaceVideoAnnotator(PoseBodyFaceAnnotator):
+    def __init__(self, cfg, device=None):
+        super().__init__(cfg, device)
+        self.use_body, self.use_face, self.use_hand = True, True, True
+    @torch.no_grad()
+    @torch.inference_mode
     def forward(self, frames, input_filename):
-        import ipdb; ipdb.set_trace()
         ret_frames = []
         for frame_id, frame in enumerate(frames):
             anno_frame = super().forward(np.array(frame), frame_id, input_filename)
