@@ -126,6 +126,8 @@ class PoseAnnotator:
         data = []
         num_people = subset.shape[0]  # from subset shape
         num_keypoints = subset.shape[1]  # from subset shape
+        num_facepoints = face.shape[1]
+        num_facepeople = face.shape[0]
         
         for person_id in range(num_people):
             for keypoint_id in range(num_keypoints):
@@ -133,7 +135,6 @@ class PoseAnnotator:
                 idx = person_id * num_keypoints + keypoint_id
                 x, y = body[idx]
                 subset_val = subset[person_id, keypoint_id]
-                face_x, face_y = face[person_id][idx]
                 
                 data.append([
                     frame_id,  # frame number
@@ -141,6 +142,18 @@ class PoseAnnotator:
                     keypoint_id,  # keypoint number (0-17)
                     x,  # keypoint x
                     y,  # keypoint y
+                    subset_val,  # subset value
+                ])
+        import ipdb;ipdb.set_trace()    
+        for person_id in range(num_facepeople):
+            for keypoint_id in range(num_facepoints):
+                # Get x,y coordinates for this person's keypoint
+                face_x, face_y = face[person_id][keypoint_id]
+                
+                data.append([
+                    frame_id,  # frame number
+                    person_id,  # body number 
+                    keypoint_id,  
                     face_x, #keypoint face x
                     face_y, #keypoint face y
                     subset_val,  # subset value
