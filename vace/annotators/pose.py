@@ -81,8 +81,10 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
-                                        
-            self.save_to_csv(pose, W, H, frame_id, input_filename)
+            
+            w_ratio, h_ratio = ori_w / W, ori_h / H
+                            
+            self.save_to_csv(pose, w_ratio, h_ratio, frame_id, input_filename)
             
             ret_data = {}
             if self.use_body:
@@ -118,7 +120,7 @@ class PoseAnnotator:
             
             return ret_data, det_result
         
-    def save_to_csv(self, pose, W, H, frame_id, input_filename=None):
+    def save_to_csv(self, pose, w_ratio, h_ratio, frame_id, input_filename=None):
         # Get the body data from the pose dictionary
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         face = pose['faces']
@@ -152,9 +154,9 @@ class PoseAnnotator:
                 # Get x,y coordinates for this person's keypoint
                 face_x, face_y = face[person_id][keypoint_id]
                 if face_x > 0:
-                    face_x *= H
+                    face_x *= w_ratio
                 if face_y > 0:
-                    face_y *= W
+                    face_y *= h_ratio
                 data.append([
                     frame_id,  # frame number
                     person_id,  # body number 
