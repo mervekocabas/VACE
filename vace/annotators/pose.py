@@ -144,7 +144,7 @@ class PoseAnnotator:
                     y,  # keypoint y
                     subset_val,  # subset value
                 ])
-        import ipdb;ipdb.set_trace()    
+
         for person_id in range(num_facepeople):
             for keypoint_id in range(num_facepoints):
                 # Get x,y coordinates for this person's keypoint
@@ -156,7 +156,6 @@ class PoseAnnotator:
                     keypoint_id,  
                     face_x, #keypoint face x
                     face_y, #keypoint face y
-                    subset_val,  # subset value
                 ])
                 
         # Create DataFrame
