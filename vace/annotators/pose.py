@@ -152,9 +152,9 @@ class PoseAnnotator:
                 # Get x,y coordinates for this person's keypoint
                 face_x, face_y = face[person_id][keypoint_id]
                 if face_x > 0:
-                    face_x *= W
+                    face_x *= H
                 if face_y > 0:
-                    face_y *= H
+                    face_y *= W
                 data.append([
                     frame_id,  # frame number
                     person_id,  # body number 
