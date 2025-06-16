@@ -148,7 +148,6 @@ class PoseAnnotator:
         # Save to CSV
         output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data')
         os.makedirs(output_dir, exist_ok=True)
-        import ipdb; ipdb.set_trace()
         # Create filename with input filename if provided
         if input_filename:
             input_basename = os.path.splitext(os.path.basename(input_filename))[0]
