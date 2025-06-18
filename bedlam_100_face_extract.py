@@ -25,7 +25,7 @@ def run_inference(idx, file_name):
     subprocess.run(cmd, env=env)
 
 if __name__ == "__main__":
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
+    csv_path = "./vace_bedlam_100_dataset/metadata_prompt_v2"
     df = pd.read_csv(csv_path)
 
     for idx, row in df.iterrows():
