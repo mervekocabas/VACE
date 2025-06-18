@@ -62,7 +62,7 @@ def run_inference(idx, file_name, prompt):
     print(f"[{idx}] Running inference on: {file_name}")
 
     cmd = [
-        "torchrun", "--nproc_per_node=4", "vace/vace_wan_inference.py",
+        "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
         "--dit_fsdp",
         "--t5_fsdp",
         "--ulysses_size", "8",
