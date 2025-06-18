@@ -51,7 +51,8 @@ from pathlib import Path
 import os
 
 def run_inference(idx, file_name, prompt):
-    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_processed")
+    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_processed_face_body")
+
     src_video = video_dir / file_name
 
     if not src_video.exists():
@@ -64,8 +65,8 @@ def run_inference(idx, file_name, prompt):
         "torchrun", "--nproc_per_node=4", "vace/vace_wan_inference.py",
         "--dit_fsdp",
         "--t5_fsdp",
-        "--ulysses_size", "2",
-        "--ring_size", "2",
+        "--ulysses_size", "8",
+        "--ring_size", "1",
         "--size", "720p",
         "--model_name", "vace-14B",
         "--ckpt_dir", "models/VACE-Wan2.1-14B",
