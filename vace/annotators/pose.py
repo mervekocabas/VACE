@@ -168,7 +168,7 @@ class PoseAnnotator:
         # Create filename with input filename if provided
         if input_filename:
             input_basename = os.path.splitext(os.path.basename(input_filename))[0]
-            output_file = os.path.join(output_dir, f'pose_keypoints_{input_basename}.csv')
+            output_file = os.path.join(output_dir, f'{input_basename}.csv')
         else:
             output_file = os.path.join(output_dir, f'pose_keypoints.csv')
         
