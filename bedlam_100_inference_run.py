@@ -51,7 +51,7 @@ from pathlib import Path
 import os
 
 def run_inference(idx, file_name, prompt):
-    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_processed_face_body")
+    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_processed_face_body_hand")
 
     src_video = video_dir / file_name
 
