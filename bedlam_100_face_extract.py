@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 
 def run_inference(idx, file_name):
-    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_face_body")
+    video_dir = Path("./results/vace-14B-v2prompt-face-body-videos")
     src_video = video_dir / file_name
 
     if not src_video.exists():
