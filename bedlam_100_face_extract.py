@@ -11,7 +11,7 @@ def run_inference(idx, file_name):
         print(f"[!] Missing video: {src_video}")
         return
 
-    print(f"[{idx}] Running inference on: {file_name}")
+    print(f"[{idx}] Running pose extract on: {file_name}")
 
     cmd = [
         "python",
