@@ -220,7 +220,7 @@ def main(args):
     # output data
     save_fps = fps if fps is not None else save_fps
     if args.pre_save_dir is None:
-        pre_save_dir = os.path.join('processed', task_name, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
+        pre_save_dir = os.path.join('processed', 'generated_video_pose', input_filename)
     else:
         pre_save_dir = args.pre_save_dir
     if not os.path.exists(pre_save_dir):
