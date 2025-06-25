@@ -78,13 +78,9 @@ def draw_bodypose(canvas, candidate, subset):
                [10, 11], [2, 12], [12, 13], [13, 14], [2, 1], [1, 15], [15, 17], \
                [1, 16], [16, 18], [3, 17], [6, 18]]
 
-    #colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
-    #          [0, 255, 85], [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], \
-    #          [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
-    
-    colors = [[0, 0, 255], [255, 0, 0], [0, 0, 255], [0, 0, 255], [255, 0, 0], [255, 0, 0], [0, 0, 255], [0, 0, 255], \
-                [0, 0, 255], [255, 0, 0], [255, 0, 0], [255, 0, 0], [0, 0, 255], [0, 0, 255], [0, 0, 255], \
-                [255, 0, 0], [255, 0, 0], [255, 0, 0]]
+    colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
+              [0, 255, 85], [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], \
+              [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
 
     for i in range(17):
         for n in range(len(subset)):
@@ -102,15 +98,15 @@ def draw_bodypose(canvas, candidate, subset):
 
     canvas = (canvas * 0.6).astype(np.uint8)
 
-    #for i in range(18):
-    #    for n in range(len(subset)):
-    #        index = int(subset[n][i])
-    #        if index == -1:
-    #            continue
-    #        x, y = candidate[index][0:2]
-    #        x = int(x * W)
-    #        y = int(y * H)
-    #        cv2.circle(canvas, (int(x), int(y)), 4, colors[i], thickness=-1)
+    for i in range(18):
+        for n in range(len(subset)):
+            index = int(subset[n][i])
+            if index == -1:
+                continue
+            x, y = candidate[index][0:2]
+            x = int(x * W)
+            y = int(y * H)
+            cv2.circle(canvas, (int(x), int(y)), 4, colors[i], thickness=-1)
 
     return canvas
 
@@ -144,15 +140,15 @@ def draw_handpose(canvas, all_hand_peaks):
 
 
 def draw_facepose(canvas, all_lmks):
-    #H, W, C = canvas.shape
-    #for lmks in all_lmks:
-    #    lmks = np.array(lmks)
-    #    for lmk in lmks:
-    #        x, y = lmk
-    #        x = int(x * W)
-    #        y = int(y * H)
-    #        if x > eps and y > eps:
-    #            cv2.circle(canvas, (x, y), 3, (255, 255, 255), thickness=-1)
+    H, W, C = canvas.shape
+    for lmks in all_lmks:
+        lmks = np.array(lmks)
+        for lmk in lmks:
+            x, y = lmk
+            x = int(x * W)
+            y = int(y * H)
+            if x > eps and y > eps:
+                cv2.circle(canvas, (x, y), 3, (255, 255, 255), thickness=-1)
     return canvas
 
 
