@@ -44,15 +44,16 @@ if __name__ == "__main__":
         pool.map(run_inference, inputs)
 '''
 
-
+'''
 import pandas as pd
 import subprocess
 from pathlib import Path
 import os
 
 def run_inference(idx, file_name, prompt):
-    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_processed_face_body_hand")
-
+    #video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_2dpose_processed_face_body_hand")
+    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_30fps_one_directory")
+    
     src_video = video_dir / file_name
 
     if not src_video.exists():
@@ -92,7 +93,8 @@ from pathlib import Path
 import os
 
 def run_inference(idx, file_name):
-    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos")
+    #video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos")
+    video_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_30fps_one_directory")
     src_video = video_dir / file_name
 
     if not src_video.exists():
@@ -122,4 +124,3 @@ if __name__ == "__main__":
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"])
-'''
