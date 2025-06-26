@@ -5,7 +5,8 @@ import os
 
 def run_inference(idx, file_name):
     #video_dir = Path("./results/vace-14B-v2prompt-face-body-videos")
-    video_dir = Path("./results/bedlam_src_vids_16fps")
+    video_dir = Path("./results/bedlam_100_videos_face_hand_vids_dwpose_30fps_one_directory")
+    
     src_video = video_dir / file_name
 
     if not src_video.exists():
