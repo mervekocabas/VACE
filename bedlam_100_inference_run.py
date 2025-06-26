@@ -120,7 +120,7 @@ def run_inference(idx, file_name):
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, delimiter=';')
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"])
