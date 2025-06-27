@@ -390,9 +390,8 @@ def main(args):
         logging.info(f"Saving generated video to {save_file}")
         ret_data['out_video'] = save_file
         
-        import ipdb; ipdb.set_trace()
         # Save individual frames
-        video_frames = video[0].permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
+        video_frames = video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
         for i, frame in enumerate(video_frames):
             frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
             frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
