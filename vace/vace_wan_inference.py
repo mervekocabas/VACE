@@ -347,7 +347,6 @@ def main(args):
     if num_real_frames < args.frame_num:
         padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
         src_mask = torch.cat([src_mask, padding], dim=1)
-    import ipdb; ipdb.set_trace()
 
     logging.info(f"Generating video...")
     video = wan_vace.generate(
@@ -367,7 +366,7 @@ def main(args):
     ret_data = {}
     if rank == 0:
         if args.save_dir is None:
-            save_dir = os.path.join('results', args.model_name, args.src_video, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
+            save_dir = os.path.join('results', args.model_name, args.frame_dir, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
         else:
             save_dir = args.save_dir
         if not os.path.exists(save_dir):
