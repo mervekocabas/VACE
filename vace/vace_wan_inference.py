@@ -372,7 +372,6 @@ def main(args):
         padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
         src_mask = torch.cat([src_mask, padding], dim=1)
     
-    import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
@@ -434,6 +433,19 @@ def main(args):
             value_range=(-1, 1))
         logging.info(f"Saving src_video to {save_file}")
         ret_data['src_video'] = save_file
+        
+        # Create frames directory
+        frames_dir_src = os.path.join(save_dir, 'frames_src')
+        os.makedirs(frames_dir_src, exist_ok=True)
+        
+        # Save individual frames
+        src_video_frames = src_video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
+        for i, frame in enumerate(src_video_frames):
+            frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
+            frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
+            Image.fromarray(frame_np).save(frame_path)
+        logging.info(f"Saved {len(src_video_frames)} frames to {frames_dir_src}")
+        ret_data['src_out_frames'] = frames_dir_src
 
         save_file = os.path.join(save_dir, 'src_mask.mp4')
         cache_video(
