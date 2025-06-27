@@ -24,6 +24,7 @@ from annotators.utils import get_annotator
 
 import numpy as np
 from pathlib import Path
+import cv2
 
 EXAMPLE_PROMPT = {
     "vace-1.3B": {
@@ -37,7 +38,30 @@ EXAMPLE_PROMPT = {
 }
 
 
+def save_input_frames_as_video(src_frames_dir, save_dir, fps=30):
+    """Convert input frames directory to video matching VACE's format"""
+    frame_files = sorted(Path(src_frames_dir).glob('frame_*.jpg'))
+    if not frame_files:
+        logging.warning(f"No input frames found in {src_frames_dir}")
+        return None
 
+    # Create video from input frames
+    save_path = os.path.join(save_dir, 'src_input_video.mp4')
+    
+    # Read first frame to get dimensions
+    first_frame = np.array(Image.open(frame_files[0]))
+    height, width = first_frame.shape[:2]
+    
+    # Create video writer
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video_writer = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
+    
+    for frame_file in frame_files:
+        frame = cv2.imread(str(frame_file))
+        video_writer.write(frame)
+    
+    video_writer.release()
+    return save_path
 
 def validate_args(args):
     # Basic check
@@ -218,15 +242,15 @@ def load_frames_as_vace(frames_dir, target_frames, target_size):
         img = np.array(img)
         
         # VACE-style resize and center crop
-        h, w = img.shape[:2]
-        scale = max(target_size[1]/w, target_size[0]/h)
-        img = Image.fromarray(img).resize((round(scale*w), round(scale*h)), Image.LANCZOS)
-        img = np.array(img)
+        #h, w = img.shape[:2]
+        #scale = max(target_size[1]/w, target_size[0]/h)
+        #img = Image.fromarray(img).resize((round(scale*w), round(scale*h)), Image.LANCZOS)
+        #img = np.array(img)
         
         # Center crop
-        y1 = (img.shape[0] - target_size[0]) // 2
-        x1 = (img.shape[1] - target_size[1]) // 2
-        img = img[y1:y1+target_size[0], x1:x1+target_size[1]]
+        #y1 = (img.shape[0] - target_size[0]) // 2
+        #x1 = (img.shape[1] - target_size[1]) // 2
+        #img = img[y1:y1+target_size[0], x1:x1+target_size[1]]
         
         # Normalize to [-1,1]
         img = torch.from_numpy(img).float() / 127.5 - 1.0
@@ -347,7 +371,8 @@ def main(args):
     if num_real_frames < args.frame_num:
         padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
         src_mask = torch.cat([src_mask, padding], dim=1)
-
+    
+    import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
