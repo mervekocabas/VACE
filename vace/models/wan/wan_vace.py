@@ -474,6 +474,7 @@ class WanVace(WanT2V):
             # Center the image on canvas
             top = (canvas_height - new_height) // 2
             left = (canvas_width - new_width) // 2
+            import ipdb; ipdb.set_trace()
             white_canvas[:, :, top:top + new_height, left:left + new_width] = resized_image
             
             processed_frames.append(white_canvas.squeeze(0))  # [C,1,H,W]
