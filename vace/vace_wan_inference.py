@@ -22,6 +22,8 @@ from models.wan import WanVace
 from models.wan.configs import WAN_CONFIGS, SIZE_CONFIGS, MAX_AREA_CONFIGS, SUPPORTED_SIZES
 from annotators.utils import get_annotator
 
+import numpy as np
+
 EXAMPLE_PROMPT = {
     "vace-1.3B": {
         "src_ref_images": 'assets/images/girl.png,assets/images/snake.png',
@@ -193,6 +195,47 @@ def _init_logging(rank):
         logging.basicConfig(level=logging.ERROR)
 
 
+def load_frames_as_vace(frames_dir, target_frames, target_size):
+    """Load and process frames exactly like VACE processes videos"""
+    frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
+    if not frame_files:
+        raise ValueError(f"No frames found in {frames_dir}")
+    
+    # Select frames (evenly spaced if too many)
+    num_frames = len(frame_files)
+    frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
+    selected_files = [frame_files[i] for i in frame_indices]
+    
+    processed_frames = []
+    for frame_path in selected_files:
+        img = Image.open(frame_path)
+        img = np.array(img)
+        
+        # VACE-style resize and center crop
+        h, w = img.shape[:2]
+        scale = max(target_size[1]/w, target_size[0]/h)
+        img = Image.fromarray(img).resize((round(scale*w), round(scale*h)), Image.LANCZOS)
+        img = np.array(img)
+        
+        # Center crop
+        y1 = (img.shape[0] - target_size[0]) // 2
+        x1 = (img.shape[1] - target_size[1]) // 2
+        img = img[y1:y1+target_size[0], x1:x1+target_size[1]]
+        
+        # Normalize to [-1,1]
+        img = torch.from_numpy(img).float() / 127.5 - 1.0
+        processed_frames.append(img)
+    
+    # Stack into [C,T,H,W] tensor
+    video = torch.stack(processed_frames).permute(3,0,1,2)
+    
+    # Pad with zeros if needed
+    if video.shape[1] < target_frames:
+        padding = torch.zeros((3, target_frames-video.shape[1], *target_size), dtype=video.dtype)
+        video = torch.cat([video, padding], dim=1)
+    
+    return video.unsqueeze(0)  # Add batch dim
+
 def main(args):
     args = argparse.Namespace(**args) if isinstance(args, dict) else args
     args = validate_args(args)
@@ -282,16 +325,28 @@ def main(args):
         t5_cpu=args.t5_cpu,
     )
 
-    src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
-                                                                  [args.src_mask],
-                                                                  [None if args.src_ref_images is None else args.src_ref_images.split(',')],
-                                                                  args.frame_num, SIZE_CONFIGS[args.size], device)
-    import ipdb; ipdb.set_trace()
+    #src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
+    #                                                              [args.src_mask],
+    #                                                              [None if args.src_ref_images is None else args.src_ref_images.split(',')],
+    #                                                              args.frame_num, SIZE_CONFIGS[args.size], device)
+    
+    # Process frames exactly like VACE would process video
+    target_size = SIZE_CONFIGS[args.size]
+    src_video = load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
+    src_ref_images = [None]
+    
+    # Create mask (1=real frame, 0=padding)
+    num_real_frames = min(len(list(Path(args.frames_dir).glob("*.[pj][np]g"))), args.frame_num)
+    src_mask = torch.ones((1, num_real_frames, *target_size), device=device)
+    if num_real_frames < args.frame_num:
+        padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
+        src_mask = torch.cat([src_mask, padding], dim=1)
+
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
-        src_video,
-        src_mask,
+        [src_video.to(device)],
+        [src_mask],
         src_ref_images,
         size=SIZE_CONFIGS[args.size],
         frame_num=args.frame_num,
@@ -310,6 +365,10 @@ def main(args):
             save_dir = args.save_dir
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
+            
+        # Create frames directory
+        frames_dir = os.path.join(save_dir, 'frames')
+        os.makedirs(frames_dir, exist_ok=True)
 
         if args.save_file is not None:
             save_file = args.save_file
@@ -324,6 +383,15 @@ def main(args):
             value_range=(-1, 1))
         logging.info(f"Saving generated video to {save_file}")
         ret_data['out_video'] = save_file
+        
+        # Save individual frames
+        video_frames = video[0].permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
+        for i, frame in enumerate(video_frames):
+            frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
+            frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
+            Image.fromarray(frame_np).save(frame_path)
+        logging.info(f"Saved {len(video_frames)} frames to {frames_dir}")
+        ret_data['out_frames'] = frames_dir
 
         save_file = os.path.join(save_dir, 'src_video.mp4')
         cache_video(
