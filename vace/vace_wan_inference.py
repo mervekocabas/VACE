@@ -347,6 +347,7 @@ def main(args):
     if num_real_frames < args.frame_num:
         padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
         src_mask = torch.cat([src_mask, padding], dim=1)
+    import ipdb; ipdb.set_trace()
 
     logging.info(f"Generating video...")
     video = wan_vace.generate(
