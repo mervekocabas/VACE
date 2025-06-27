@@ -361,6 +361,8 @@ def main(args):
             padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
             src_mask = torch.cat([src_mask, padding], dim=1)
         src_video.to(device)
+        src_video = [src_video]
+        src_mask = [src_mask]
     
     else:
         import ipdb; ipdb.set_trace()
@@ -372,8 +374,8 @@ def main(args):
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
-        [src_video],
-        [src_mask],
+        src_video,
+        src_mask,
         src_ref_images,
         size=SIZE_CONFIGS[args.size],
         frame_num=args.frame_num,
