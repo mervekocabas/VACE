@@ -224,7 +224,7 @@ def _init_logging(rank):
     else:
         logging.basicConfig(level=logging.ERROR)
 
-
+'''
 def load_frames_as_vace(frames_dir, target_frames, target_size):
     """Load and process frames exactly like VACE processes videos"""
     frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
@@ -257,6 +257,7 @@ def load_frames_as_vace(frames_dir, target_frames, target_size):
         video = torch.cat([video, padding], dim=1)
     
     return video  # Add batch dim
+'''
 
 def main(args):
     args = argparse.Namespace(**args) if isinstance(args, dict) else args
@@ -354,7 +355,7 @@ def main(args):
     
     # Process frames exactly like VACE would process video
     target_size = SIZE_CONFIGS[args.size]
-    src_video = load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
+    src_video = WanVace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
     src_ref_images = [None]
     
     # Create mask (1=real frame, 0=padding)

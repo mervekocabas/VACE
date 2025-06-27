@@ -26,6 +26,8 @@ from wan.text2video import (WanT2V, T5EncoderModel, WanVAE, shard_model, FlowDPM
 from .modules.model import VaceWanModel
 from ..utils.preprocessor import VaceVideoProcessor
 
+import numpy as np
+from pathlib import Path
 
 class WanVace(WanT2V):
     def __init__(
@@ -431,6 +433,55 @@ class WanVace(WanT2V):
             dist.barrier()
 
         return videos[0] if self.rank == 0 else None
+    
+    def load_frames_as_vace(self, frames_dir, target_frames, target_size):
+        """Load frames with centered resizing (like reference image handling)"""
+        frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
+        if not frame_files:
+            raise ValueError(f"No frames found in {frames_dir}")
+        
+        # Select frames (evenly spaced if too many)
+        num_frames = len(frame_files)
+        frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
+        selected_files = [frame_files[i] for i in frame_indices]
+        
+        processed_frames = []
+        canvas_height, canvas_width = target_size
+        
+        for frame_path in selected_files:
+            # Load image and convert to tensor [-1,1] range
+            img = Image.open(frame_path)
+            img_tensor = torch.from_numpy(np.array(img)).float() / 127.5 - 1.0  # [H,W,C]
+            img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(0).to(self.device)  # [1,C,H,W]
+            
+            # Create white canvas [-1,1] range
+            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=self.device) * -1  # [-1, 1]
+            
+            # Calculate resize parameters
+            ref_height, ref_width = img_tensor.shape[-2:]
+            scale = min(canvas_height / ref_height, canvas_width / ref_width)
+            new_height = int(ref_height * scale)
+            new_width = int(ref_width * scale)
+            
+            # Resize with bilinear interpolation
+            resized_image = F.interpolate(
+                img_tensor, 
+                size=(new_height, new_width), 
+                mode='bilinear', 
+                align_corners=False
+            )
+            
+            # Center the image on canvas
+            top = (canvas_height - new_height) // 2
+            left = (canvas_width - new_width) // 2
+            white_canvas[:, :, top:top + new_height, left:left + new_width] = resized_image
+            
+            processed_frames.append(white_canvas.squeeze(0))  # [C,1,H,W]
+        
+        # Stack along time dimension [C,T,H,W]
+        video = torch.cat(processed_frames, dim=1)
+        
+        return video  # Add batch dim [1,C,T,H,W]
 
 
 class WanVaceMP(WanVace):
@@ -466,7 +517,6 @@ class WanVaceMP(WanVace):
             zero_start=True,
             seq_len=75600,
             keep_last=True)
-
 
     def dynamic_load(self):
         if hasattr(self, 'inference_pids') and self.inference_pids is not None:
