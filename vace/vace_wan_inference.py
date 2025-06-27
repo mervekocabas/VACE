@@ -355,7 +355,7 @@ def main(args):
     
     # Process frames exactly like VACE would process video
     target_size = SIZE_CONFIGS[args.size]
-    src_video = WanVace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
+    src_video = wan_vace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
     src_ref_images = [None]
     
     # Create mask (1=real frame, 0=padding)
