@@ -240,7 +240,7 @@ def load_frames_as_vace(frames_dir, target_frames, target_size):
         padding = torch.zeros((3, target_frames-video.shape[1], *target_size), dtype=video.dtype)
         video = torch.cat([video, padding], dim=1)
     
-    return video.unsqueeze(0)  # Add batch dim
+    return video  # Add batch dim
 
 def main(args):
     args = argparse.Namespace(**args) if isinstance(args, dict) else args
