@@ -138,6 +138,11 @@ def get_parser():
         default=None,
         help="The file of the source video. Default None.")
     parser.add_argument(
+        "--frames_dir",
+        type=str,
+        default=None,
+        help="The file of the source video. Default None.")
+    parser.add_argument(
         "--src_mask",
         type=str,
         default=None,
