@@ -444,7 +444,7 @@ def main(args):
         os.makedirs(frames_dir_src, exist_ok=True)
         
         # Save individual frames
-        if args.frame_dir:
+        if args.frames_dir:
             src_video_frames = src_video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
             for i, frame in enumerate(src_video_frames):
                 frame_path = os.path.join(frames_dir_src, f'frame_{i:04d}.png')
