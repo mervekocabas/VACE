@@ -23,6 +23,7 @@ from models.wan.configs import WAN_CONFIGS, SIZE_CONFIGS, MAX_AREA_CONFIGS, SUPP
 from annotators.utils import get_annotator
 
 import numpy as np
+from pathlib import Path
 
 EXAMPLE_PROMPT = {
     "vace-1.3B": {
