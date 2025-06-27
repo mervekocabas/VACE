@@ -347,23 +347,25 @@ def main(args):
         use_usp=(args.ulysses_size > 1 or args.ring_size > 1),
         t5_cpu=args.t5_cpu,
     )
-
-    #src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
-    #                                                              [args.src_mask],
-    #                                                              [None if args.src_ref_images is None else args.src_ref_images.split(',')],
-    #                                                              args.frame_num, SIZE_CONFIGS[args.size], device)
     
-    # Process frames exactly like VACE would process video
-    target_size = SIZE_CONFIGS[args.size]
-    src_video = wan_vace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
-    src_ref_images = [None]
+    if args.frames_dir:
+         # Process frames exactly like VACE would process video
+        target_size = SIZE_CONFIGS[args.size]
+        src_video = wan_vace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
+        src_ref_images = [None]
+        
+        # Create mask (1=real frame, 0=padding)
+        num_real_frames = min(len(list(Path(args.frames_dir).glob("*.[pj][np]g"))), args.frame_num)
+        src_mask = torch.ones((1, num_real_frames, *target_size), device=device)
+        if num_real_frames < args.frame_num:
+            padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
+            src_mask = torch.cat([src_mask, padding], dim=1)
     
-    # Create mask (1=real frame, 0=padding)
-    num_real_frames = min(len(list(Path(args.frames_dir).glob("*.[pj][np]g"))), args.frame_num)
-    src_mask = torch.ones((1, num_real_frames, *target_size), device=device)
-    if num_real_frames < args.frame_num:
-        padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
-        src_mask = torch.cat([src_mask, padding], dim=1)
+    else:
+        src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
+                                                                  [args.src_mask],
+                                                                  [None if args.src_ref_images is None else args.src_ref_images.split(',')],
+                                                                  args.frame_num, SIZE_CONFIGS[args.size], device)
     
     logging.info(f"Generating video...")
     video = wan_vace.generate(
@@ -415,7 +417,8 @@ def main(args):
             Image.fromarray(frame_np).save(frame_path)
         logging.info(f"Saved {len(video_frames)} frames to {frames_dir}")
         ret_data['out_frames'] = frames_dir
-
+        
+        import ipdb; ipdb.set_trace()
         save_file = os.path.join(save_dir, 'src_video.mp4')
         cache_video(
             tensor=src_video[0][None],
