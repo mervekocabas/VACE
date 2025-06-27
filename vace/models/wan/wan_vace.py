@@ -434,7 +434,7 @@ class WanVace(WanT2V):
 
         return videos[0] if self.rank == 0 else None
     
-    def load_frames_as_vace(frames_dir, target_frames, target_size, device='cuda'):
+    def load_frames_as_vace(self, frames_dir, target_frames, target_size):
         """Load frames with centered resizing (fixed shape handling)"""
         frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
         if not frame_files:
@@ -452,10 +452,10 @@ class WanVace(WanT2V):
             # Load image and convert to tensor [-1,1] range
             img = Image.open(frame_path)
             img_tensor = torch.from_numpy(np.array(img)).float() / 127.5 - 1.0  # [H,W,C]
-            img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(1).to(device)  # [C,1,H,W]
+            img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(1).to(self.device)  # [C,1,H,W]
             
             # Create white canvas [-1,1] range
-            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=device) * -1  # [C,1,H,W]
+            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=self.device) * -1  # [C,1,H,W]
             
             # Calculate resize parameters
             ref_height, ref_width = img_tensor.shape[-2:]
