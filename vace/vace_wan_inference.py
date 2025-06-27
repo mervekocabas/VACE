@@ -286,7 +286,7 @@ def main(args):
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-
+    import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
