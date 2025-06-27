@@ -360,8 +360,10 @@ def main(args):
         if num_real_frames < args.frame_num:
             padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
             src_mask = torch.cat([src_mask, padding], dim=1)
+        src_video.to(device)
     
     else:
+        import ipdb; ipdb.set_trace()
         src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
@@ -370,7 +372,7 @@ def main(args):
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
-        [src_video.to(device)],
+        [src_video],
         [src_mask],
         src_ref_images,
         size=SIZE_CONFIGS[args.size],
