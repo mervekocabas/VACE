@@ -248,9 +248,9 @@ def load_frames_as_vace(frames_dir, target_frames, target_size):
         img = np.array(img)
         
         # Center crop
-        y1 = (img.shape[0] - target_size[0]) // 2
-        x1 = (img.shape[1] - target_size[1]) // 2
-        img = img[y1:y1+target_size[0], x1:x1+target_size[1]]
+        #y1 = (img.shape[0] - target_size[0]) // 2
+        #x1 = (img.shape[1] - target_size[1]) // 2
+        #img = img[y1:y1+target_size[0], x1:x1+target_size[1]]
         
         # Normalize to [-1,1]
         img = torch.from_numpy(img).float() / 127.5 - 1.0
@@ -441,7 +441,7 @@ def main(args):
         # Save individual frames
         src_video_frames = src_video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
         for i, frame in enumerate(src_video_frames):
-            frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
+            frame_path = os.path.join(frames_dir_src, f'frame_{i:04d}.png')
             frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
             Image.fromarray(frame_np).save(frame_path)
         logging.info(f"Saved {len(src_video_frames)} frames to {frames_dir_src}")
