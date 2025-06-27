@@ -389,7 +389,11 @@ def main(args):
     ret_data = {}
     if rank == 0:
         if args.save_dir is None:
-            save_dir = os.path.join('results', args.model_name, args.frames_dir, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
+            if args.frames_dir:
+                save_dir = os.path.join('results', args.model_name, args.frames_dir, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
+            else:
+                save_dir = os.path.join('results', args.model_name, args.src_video, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
+  
         else:
             save_dir = args.save_dir
         if not os.path.exists(save_dir):
@@ -414,13 +418,14 @@ def main(args):
         ret_data['out_video'] = save_file
         
         # Save individual frames
-        video_frames = video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
-        for i, frame in enumerate(video_frames):
-            frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
-            frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
-            Image.fromarray(frame_np).save(frame_path)
-        logging.info(f"Saved {len(video_frames)} frames to {frames_dir}")
-        ret_data['out_frames'] = frames_dir
+        if args.frames_dir:
+            video_frames = video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
+            for i, frame in enumerate(video_frames):
+                frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
+                frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
+                Image.fromarray(frame_np).save(frame_path)
+            logging.info(f"Saved {len(video_frames)} frames to {frames_dir}")
+            ret_data['out_frames'] = frames_dir
         
         import ipdb; ipdb.set_trace()
         save_file = os.path.join(save_dir, 'src_video.mp4')
@@ -439,13 +444,14 @@ def main(args):
         os.makedirs(frames_dir_src, exist_ok=True)
         
         # Save individual frames
-        src_video_frames = src_video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
-        for i, frame in enumerate(src_video_frames):
-            frame_path = os.path.join(frames_dir_src, f'frame_{i:04d}.png')
-            frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
-            Image.fromarray(frame_np).save(frame_path)
-        logging.info(f"Saved {len(src_video_frames)} frames to {frames_dir_src}")
-        ret_data['src_out_frames'] = frames_dir_src
+        if args.frame_dir:
+            src_video_frames = src_video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
+            for i, frame in enumerate(src_video_frames):
+                frame_path = os.path.join(frames_dir_src, f'frame_{i:04d}.png')
+                frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
+                Image.fromarray(frame_np).save(frame_path)
+            logging.info(f"Saved {len(src_video_frames)} frames to {frames_dir_src}")
+            ret_data['src_out_frames'] = frames_dir_src
 
         save_file = os.path.join(save_dir, 'src_mask.mp4')
         cache_video(
