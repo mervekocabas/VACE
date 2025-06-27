@@ -434,8 +434,8 @@ class WanVace(WanT2V):
 
         return videos[0] if self.rank == 0 else None
     
-    def load_frames_as_vace(self, frames_dir, target_frames, target_size):
-        """Load frames with centered resizing (like reference image handling)"""
+    def load_frames_as_vace(frames_dir, target_frames, target_size, device='cuda'):
+        """Load frames with centered resizing (fixed shape handling)"""
         frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
         if not frame_files:
             raise ValueError(f"No frames found in {frames_dir}")
@@ -452,10 +452,10 @@ class WanVace(WanT2V):
             # Load image and convert to tensor [-1,1] range
             img = Image.open(frame_path)
             img_tensor = torch.from_numpy(np.array(img)).float() / 127.5 - 1.0  # [H,W,C]
-            img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(0).to(self.device)  # [1,C,H,W]
+            img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(1).to(device)  # [C,1,H,W]
             
             # Create white canvas [-1,1] range
-            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=self.device) * -1  # [-1, 1]
+            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=device) * -1  # [C,1,H,W]
             
             # Calculate resize parameters
             ref_height, ref_width = img_tensor.shape[-2:]
@@ -469,15 +469,16 @@ class WanVace(WanT2V):
                 size=(new_height, new_width), 
                 mode='bilinear', 
                 align_corners=False
-            )
+            )  # Output [C,1,newH,newW]
             
             # Center the image on canvas
             top = (canvas_height - new_height) // 2
             left = (canvas_width - new_width) // 2
-            import ipdb; ipdb.set_trace()
+            
+            # Correct shape assignment
             white_canvas[:, :, top:top + new_height, left:left + new_width] = resized_image
             
-            processed_frames.append(white_canvas.squeeze(0))  # [C,1,H,W]
+            processed_frames.append(white_canvas)  # [C,1,H,W]
         
         # Stack along time dimension [C,T,H,W]
         video = torch.cat(processed_frames, dim=1)
