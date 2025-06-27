@@ -375,7 +375,7 @@ def main(args):
         # Create frames directory
         frames_dir = os.path.join(save_dir, 'frames')
         os.makedirs(frames_dir, exist_ok=True)
-
+      
         if args.save_file is not None:
             save_file = args.save_file
         else:
@@ -390,6 +390,7 @@ def main(args):
         logging.info(f"Saving generated video to {save_file}")
         ret_data['out_video'] = save_file
         
+        import ipdb; ipdb.set_trace()
         # Save individual frames
         video_frames = video[0].permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
         for i, frame in enumerate(video_frames):
