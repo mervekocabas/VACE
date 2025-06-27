@@ -246,7 +246,7 @@ def load_frames_as_vace(frames_dir, target_frames, target_size):
         scale = max(target_size[1]/w, target_size[0]/h)
         img = Image.fromarray(img).resize((round(scale*w), round(scale*h)), Image.LANCZOS)
         img = np.array(img)
-        
+        import ipdb; ipdb.set_trace()
         # Center crop
         #y1 = (img.shape[0] - target_size[0]) // 2
         #x1 = (img.shape[1] - target_size[1]) // 2
