@@ -239,18 +239,10 @@ def load_frames_as_vace(frames_dir, target_frames, target_size):
     processed_frames = []
     for frame_path in selected_files:
         img = Image.open(frame_path)
-        img = np.array(img)
         
-        # VACE-style resize and center crop
-        h, w = img.shape[:2]
-        scale = max(target_size[1]/w, target_size[0]/h)
-        img = Image.fromarray(img).resize((round(scale*w), round(scale*h)), Image.LANCZOS)
+        # Direct resize to target dimensions (no aspect ratio preservation)
+        img = img.resize(target_size[::-1], Image.LANCZOS)  # Size is (width, height)
         img = np.array(img)
-        import ipdb; ipdb.set_trace()
-        # Center crop
-        #y1 = (img.shape[0] - target_size[0]) // 2
-        #x1 = (img.shape[1] - target_size[1]) // 2
-        #img = img[y1:y1+target_size[0], x1:x1+target_size[1]]
         
         # Normalize to [-1,1]
         img = torch.from_numpy(img).float() / 127.5 - 1.0
