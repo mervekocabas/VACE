@@ -422,17 +422,16 @@ def main(args):
         os.makedirs(out_frames_dir, exist_ok=True)
         
         if args.frames_dir:
-            video_frames = video.permute(1, 0, 2, 3)  # [T,C,H,W] -> [C,T,H,W] for cache_image
-            for i in range(video_frames.size(1)):
+            for i in range(video.size(1)):
                 frame_path = os.path.join(out_frames_dir, f'frame_{i:04d}.png')
                 cache_image(
-                    tensor=video_frames[:, i:i+1, ...],  # [C,1,H,W]
+                    tensor=video[:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
                     nrow=1,
                     normalize=True,
                     value_range=(-1, 1))
             ret_data['out_frames'] = out_frames_dir
-            logging.info(f"Saved {video_frames.size(1)} output frames to {out_frames_dir}")
+            logging.info(f"Saved {video.size(1)} output frames to {out_frames_dir}")
 
         import ipdb; ipdb.set_trace()
         save_file = os.path.join(save_dir, 'src_video.mp4')
