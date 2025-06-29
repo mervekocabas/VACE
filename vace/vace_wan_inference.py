@@ -450,17 +450,16 @@ def main(args):
         os.makedirs(src_frames_dir, exist_ok=True)
         
         if args.frames_dir:
-            src_video_frames = src_video.permute(1, 0, 2, 3)  # [T,C,H,W] -> [C,T,H,W]
-            for i in range(src_video_frames.size(1)):
+            for i in range(src_video.size(1)):
                 frame_path = os.path.join(src_frames_dir, f'frame_{i:04d}.png')
                 cache_image(
-                    tensor=src_video_frames[:, i:i+1, ...],  # [C,1,H,W]
+                    tensor=src_video[:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
                     nrow=1,
                     normalize=True,
                     value_range=(-1, 1))
             ret_data['src_out_frames'] = src_frames_dir
-            logging.info(f"Saved {src_video_frames.size(1)} processed input frames to {src_frames_dir}")
+            logging.info(f"Saved {src_video.size(1)} processed input frames to {src_frames_dir}")
 
 
         save_file = os.path.join(save_dir, 'src_mask.mp4')
