@@ -417,16 +417,23 @@ def main(args):
         logging.info(f"Saving generated video to {save_file}")
         ret_data['out_video'] = save_file
         
-        # Save individual frames
-        if args.frames_dir:
-            video_frames = video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
-            for i, frame in enumerate(video_frames):
-                frame_path = os.path.join(frames_dir, f'frame_{i:04d}.png')
-                frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
-                Image.fromarray(frame_np).save(frame_path)
-            logging.info(f"Saved {len(video_frames)} frames to {frames_dir}")
-            ret_data['out_frames'] = frames_dir
+        # Save output frames using cache_image
+        out_frames_dir = os.path.join(save_dir, 'frames')
+        os.makedirs(out_frames_dir, exist_ok=True)
         
+        if args.frames_dir:
+            video_frames = video.permute(1, 0, 2, 3)  # [T,C,H,W] -> [C,T,H,W] for cache_image
+            for i in range(video_frames.size(1)):
+                frame_path = os.path.join(out_frames_dir, f'frame_{i:04d}.png')
+                cache_image(
+                    tensor=video_frames[:, i:i+1, ...],  # [C,1,H,W]
+                    save_file=frame_path,
+                    nrow=1,
+                    normalize=True,
+                    value_range=(-1, 1))
+            ret_data['out_frames'] = out_frames_dir
+            logging.info(f"Saved {video_frames.size(1)} output frames to {out_frames_dir}")
+
         import ipdb; ipdb.set_trace()
         save_file = os.path.join(save_dir, 'src_video.mp4')
         cache_video(
@@ -439,19 +446,23 @@ def main(args):
         logging.info(f"Saving src_video to {save_file}")
         ret_data['src_video'] = save_file
         
-        # Create frames directory
-        frames_dir_src = os.path.join(save_dir, 'frames_src')
-        os.makedirs(frames_dir_src, exist_ok=True)
+        # Save processed input frames using cache_image
+        src_frames_dir = os.path.join(save_dir, 'frames_src')
+        os.makedirs(src_frames_dir, exist_ok=True)
         
-        # Save individual frames
         if args.frames_dir:
-            src_video_frames = src_video.permute(1, 2, 3, 0)  # [T,C,H,W] -> [T,H,W,C]
-            for i, frame in enumerate(src_video_frames):
-                frame_path = os.path.join(frames_dir_src, f'frame_{i:04d}.png')
-                frame_np = ((frame.cpu().numpy() + 1) * 127.5).clip(0, 255).astype(np.uint8)
-                Image.fromarray(frame_np).save(frame_path)
-            logging.info(f"Saved {len(src_video_frames)} frames to {frames_dir_src}")
-            ret_data['src_out_frames'] = frames_dir_src
+            src_video_frames = src_video.permute(1, 0, 2, 3)  # [T,C,H,W] -> [C,T,H,W]
+            for i in range(src_video_frames.size(1)):
+                frame_path = os.path.join(src_frames_dir, f'frame_{i:04d}.png')
+                cache_image(
+                    tensor=src_video_frames[:, i:i+1, ...],  # [C,1,H,W]
+                    save_file=frame_path,
+                    nrow=1,
+                    normalize=True,
+                    value_range=(-1, 1))
+            ret_data['src_out_frames'] = src_frames_dir
+            logging.info(f"Saved {src_video_frames.size(1)} processed input frames to {src_frames_dir}")
+
 
         save_file = os.path.join(save_dir, 'src_mask.mp4')
         cache_video(
