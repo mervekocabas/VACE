@@ -348,6 +348,7 @@ def main(args):
         t5_cpu=args.t5_cpu,
     )
     
+    import ipdb; ipdb.set_trace()
     if args.frames_dir:
          # Process frames exactly like VACE would process video
         target_size = SIZE_CONFIGS[args.size]
