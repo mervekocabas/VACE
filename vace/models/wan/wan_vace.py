@@ -194,6 +194,7 @@ class WanVace(WanT2V):
         return [torch.cat([zz, mm], dim=0) for zz, mm in zip(z, m)]
 
     def prepare_source(self, src_video, src_mask, src_ref_images, num_frames, image_size, device):
+        import ipdb; ipdb.set_trace()
         area = image_size[0] * image_size[1]
         self.vid_proc.set_area(area)
         if area == 720*1280:
@@ -440,7 +441,7 @@ class WanVace(WanT2V):
         frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
         if not frame_files:
             raise ValueError(f"No frames found in {frames_dir}")
-        
+        import ipdb; ipdb.set_trace()
         # Select frames (evenly spaced if too many)
         num_frames = len(frame_files)
         frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
