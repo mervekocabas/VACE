@@ -441,7 +441,7 @@ class WanVace(WanT2V):
         frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
         if not frame_files:
             raise ValueError(f"No frames found in {frames_dir}")
-        import ipdb; ipdb.set_trace()
+        
         # Select frames (evenly spaced if too many)
         num_frames = len(frame_files)
         frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
@@ -450,6 +450,7 @@ class WanVace(WanT2V):
         # Get original dimensions from first frame
         first_frame = Image.open(selected_files[0])
         original_height, original_width = first_frame.size[1], first_frame.size[0]
+        import ipdb; ipdb.set_trace()
         
         # Override target_size with original dimensions
         actual_size = (original_height, original_width)
