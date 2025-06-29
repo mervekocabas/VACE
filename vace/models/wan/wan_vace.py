@@ -434,6 +434,51 @@ class WanVace(WanT2V):
 
         return videos[0] if self.rank == 0 else None
     
+    
+    def load_frames_as_vace(self, frames_dir, target_frames, target_size):
+        """Load frames without any resizing, keeping original dimensions"""
+        frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
+        if not frame_files:
+            raise ValueError(f"No frames found in {frames_dir}")
+        
+        # Select frames (evenly spaced if too many)
+        num_frames = len(frame_files)
+        frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
+        selected_files = [frame_files[i] for i in frame_indices]
+        
+        # Get original dimensions from first frame
+        first_frame = Image.open(selected_files[0])
+        original_height, original_width = first_frame.size[1], first_frame.size[0]
+        
+        # Override target_size with original dimensions
+        actual_size = (original_height, original_width)
+        
+        processed_frames = []
+        
+        for frame_path in selected_files:
+            # Load image and convert to tensor [-1,1] range
+            img = Image.open(frame_path)
+            img_tensor = torch.from_numpy(np.array(img)).float() / 127.5 - 1.0  # [H,W,C]
+            img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(1).to(self.device)  # [C,1,H,W]
+            
+            # Verify dimensions match first frame
+            current_height, current_width = img_tensor.shape[-2:]
+            if (current_height, current_width) != actual_size:
+                raise ValueError(f"Frame {frame_path.name} has size {(current_height, current_width)} "
+                            f"which doesn't match first frame size {actual_size}")
+            
+            processed_frames.append(img_tensor)  # [C,1,H,W]
+        
+        # Stack along time dimension [C,T,H,W]
+        video = torch.cat(processed_frames, dim=1)
+        
+        # Store original dimensions for downstream processing
+        self.original_dims = actual_size
+        
+        return video  # Add batch dim [1,C,T,H,W]
+
+    '''
+    # resizing 
     def load_frames_as_vace(self, frames_dir, target_frames, target_size):
         """Load frames with centered resizing (fixed shape handling)"""
         frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
@@ -484,7 +529,7 @@ class WanVace(WanT2V):
         video = torch.cat(processed_frames, dim=1)
         
         return video  # Add batch dim [1,C,T,H,W]
-
+    '''
 
 class WanVaceMP(WanVace):
     def __init__(
