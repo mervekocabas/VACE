@@ -365,12 +365,12 @@ def main(args):
         src_mask = [src_mask]
     
     else:
-        import ipdb; ipdb.set_trace()
         src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
     
+    import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
