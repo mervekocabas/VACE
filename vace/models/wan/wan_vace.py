@@ -506,7 +506,7 @@ class WanVace(WanT2V):
         print(f"Output video shape: {video.shape}")  # e.g., torch.Size([3, 81, 464, 848])
         return video
     
-    def preprocess_frames_like_reference(frames, target_size, device):
+    def preprocess_frames_like_reference(self, frames, target_size, device):
         """
         Process frames using the same logic as prepare_source's reference image handling
         

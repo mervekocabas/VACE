@@ -352,13 +352,15 @@ def main(args):
     if args.frames_dir:
          # Process frames exactly like VACE would process video
          
-        frame_paths = sorted(Path(frames_dir).glob("*.[pj][np]g"))
-
+        frame_paths = sorted(Path(args.frames_dir).glob("*.[pj][np]g"))
+        frames=[Image.open(fp) for fp in frame_paths]
+        
         processed = wan_vace.preprocess_frames_like_reference(
-            [Image.open(fp) for fp in frame_paths],
+            frames=frames,
             target_size=SIZE_CONFIGS[args.size],
             device=device
         )
+        
         import ipdb; ipdb.set_trace()
         print(processed.shape)  # [3, num_frames, 832, 480]
         target_size = SIZE_CONFIGS[args.size]
