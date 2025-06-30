@@ -26,6 +26,7 @@ import numpy as np
 from pathlib import Path
 import cv2
 import torchvision.transforms.functional as TF
+import re
 
 EXAMPLE_PROMPT = {
     "vace-1.3B": {
@@ -326,7 +327,7 @@ def main(args):
         src_video = torch.cat(src_ref_images[0], dim=1)
         src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]), device=src_video.device)
         # Extract chunk_idx from the folder name
-        frame_dir = Path(args.frame_dir)
+        frame_dir = Path(args.frames_dir)
         match = re.search(r'chunk(\d+)', frame_dir.name)
         chunk_idx = int(match.group(1)) if match else 0
 
