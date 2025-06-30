@@ -20,7 +20,6 @@ def parse_video_name(video_name):
 
 def run_inference(idx, video_name, prompt):
     # Parse scene_name and seq_number from video_name
-    import ipdb; ipdb.set_trace()
     scene_name, seq_number = parse_video_name(video_name)
     if not scene_name or not seq_number:
         print(f"[!] Invalid video name format: {video_name}")
@@ -34,7 +33,7 @@ def run_inference(idx, video_name, prompt):
         return
 
     # Get all frame files in this sequence
-    frame_files = sorted(frame_dir.glob('frame_*.jpg'))
+    frame_files = sorted(frame_dir.glob('seq_*.jpg'))
     
     if not frame_files:
         print(f"[!] No frames found in {frame_dir}")
