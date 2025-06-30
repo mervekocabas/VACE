@@ -49,11 +49,24 @@ def run_inference(idx, video_name, prompt):
         # Create temp directory for this chunk
         temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_chunk{chunk_idx}")
         temp_dir.mkdir(exist_ok=True)
-        
-        # Create symlinks to frames (avoids copying)
+
+        # === NEW: Include last 5 frames from previous generated chunk ===
+        offset = 0
+        if chunk_idx != 0:
+            prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/chunk_{chunk_idx - 1}/frames")
+            if prev_output_dir.exists():
+                prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))[-5:]
+                for i, frame_path in enumerate(prev_frames):
+                    (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                offset = 5
+            else:
+                print(f"[!] Previous chunk frames not found at {prev_output_dir}")
+
+        # Symlink current chunk's frames after the previous 5
         for i, frame_path in enumerate(frame_chunk):
-            (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            (temp_dir / f"frame_{i + offset:06d}.jpg").symlink_to(frame_path.resolve())
         
+        # Run inference
         cmd = [
             "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
             "--dit_fsdp",

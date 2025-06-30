@@ -396,7 +396,7 @@ def main(args):
         
         if args.frames_dir:
             for i in range(video.size(1)):
-                frame_path = os.path.join(out_frames_dir, f'frame_{i:06d}.png')
+                frame_path = os.path.join(out_frames_dir, f'frame_{i:06d}.jpg')
                 cache_image(
                     tensor=video[:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
@@ -423,7 +423,7 @@ def main(args):
         
         if args.frames_dir:
             for i in range(src_video[0].shape[1]):
-                frame_path = os.path.join(src_frames_dir, f'frame_{i:06d}.png')
+                frame_path = os.path.join(src_frames_dir, f'frame_{i:06d}.jpg')
                 cache_image(
                     tensor=src_video[0][:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
