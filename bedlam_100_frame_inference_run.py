@@ -52,7 +52,7 @@ def run_inference(idx, video_name, prompt):
         
         # Create symlinks to frames (avoids copying)
         for i, frame_path in enumerate(frame_chunk):
-            (temp_dir / f"frame_{i:05d}.jpg").symlink_to(frame_path.resolve())
+            (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         cmd = [
             "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
@@ -60,9 +60,7 @@ def run_inference(idx, video_name, prompt):
             "--t5_fsdp",
             "--ulysses_size", "4",
             "--ring_size", "2",
-            "--size", "720p",
-            "--model_name", "vace-14B",
-            "--ckpt_dir", "models/VACE-Wan2.1-14B",
+            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
             "--frames_dir", str(temp_dir),
             "--prompt", prompt,
             "--save_dir", f"results/{scene_name}/seq_{seq_number}/chunk_{chunk_idx}"
