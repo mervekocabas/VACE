@@ -72,7 +72,7 @@ def run_inference(idx, video_name, prompt):
         return
 
     # Get all frame files in this sequence
-    frame_files = sorted(frame_dir.glob('seq_*.jpg'))
+    frame_files = sorted(frame_dir.glob('frame_*.jpg'))
     
     if not frame_files:
         print(f"[!] No frames found in {frame_dir}")
