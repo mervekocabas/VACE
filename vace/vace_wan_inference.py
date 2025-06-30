@@ -352,8 +352,15 @@ def main(args):
     if args.frames_dir:
          # Process frames exactly like VACE would process video
          
-        frame_paths = sorted(Path(args.frames_dir).glob("*.[pj][np]g"))
-        frames=[Image.open(fp) for fp in frame_paths]
+        #frame_paths = sorted(Path(args.frames_dir).glob("*.[pj][np]g"))
+        #frames=[Image.open(fp) for fp in frame_paths]
+        
+        frame_paths = sorted([str(p) for p in Path(args.frames_dir).glob("*.[pj][np]g")])
+        
+        src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
+                                                                  [args.src_mask],
+                                                                  frame_paths,
+                                                                  args.frame_num, SIZE_CONFIGS[args.size], device)
         
         processed = wan_vace.preprocess_frames_like_reference(
             frames=frames,
