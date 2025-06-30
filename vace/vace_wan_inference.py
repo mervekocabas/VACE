@@ -321,7 +321,7 @@ def main(args):
                                                                   [frame_paths],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
         src_video = torch.cat(src_ref_images[0], dim=1)
-        src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]))
+        src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]), device=src_video.device)
         src_video = [src_video]   
         src_mask = [src_mask]
         src_ref_images = [None]
