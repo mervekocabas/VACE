@@ -435,7 +435,7 @@ class WanVace(WanT2V):
         return videos[0] if self.rank == 0 else None
     
     
-    def load_frames_matching_vace(frames_dir, target_frames, image_size, device):
+    def load_frames_as_vace(frames_dir, target_frames, image_size, device):
         """
         Load frames with EXACT same processing as VaceVideoProcessor
         (Output will match prepare_source's behavior, e.g., 464x848 for vertical 480p)
