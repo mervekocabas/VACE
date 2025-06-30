@@ -38,32 +38,6 @@ EXAMPLE_PROMPT = {
     }
 }
 
-
-def save_input_frames_as_video(src_frames_dir, save_dir, fps=30):
-    """Convert input frames directory to video matching VACE's format"""
-    frame_files = sorted(Path(src_frames_dir).glob('frame_*.jpg'))
-    if not frame_files:
-        logging.warning(f"No input frames found in {src_frames_dir}")
-        return None
-
-    # Create video from input frames
-    save_path = os.path.join(save_dir, 'src_input_video.mp4')
-    
-    # Read first frame to get dimensions
-    first_frame = np.array(Image.open(frame_files[0]))
-    height, width = first_frame.shape[:2]
-    
-    # Create video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    video_writer = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
-    
-    for frame_file in frame_files:
-        frame = cv2.imread(str(frame_file))
-        video_writer.write(frame)
-    
-    video_writer.release()
-    return save_path
-
 def validate_args(args):
     # Basic check
     assert args.ckpt_dir is not None, "Please specify the checkpoint directory."
@@ -351,7 +325,15 @@ def main(args):
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
         src_video = torch.cat(src_ref_images[0], dim=1)
         src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]), device=src_video.device)
-        src_mask[:, :5] = 0
+        # Extract chunk_idx from the folder name
+        frame_dir = Path(args.frame_dir)
+        match = re.search(r'chunk(\d+)', frame_dir.name)
+        chunk_idx = int(match.group(1)) if match else 0
+
+        # Conditionally modify src_mask
+        if chunk_idx != 0:
+            src_mask[:, :5] = 0
+     
         src_video = [src_video]   
         src_mask = [src_mask]
         src_ref_images = [None]
@@ -413,7 +395,7 @@ def main(args):
         
         if args.frames_dir:
             for i in range(video.size(1)):
-                frame_path = os.path.join(out_frames_dir, f'frame_{i:04d}.png')
+                frame_path = os.path.join(out_frames_dir, f'frame_{i:06d}.png')
                 cache_image(
                     tensor=video[:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
@@ -440,7 +422,7 @@ def main(args):
         
         if args.frames_dir:
             for i in range(src_video[0].shape[1]):
-                frame_path = os.path.join(src_frames_dir, f'frame_{i:04d}.png')
+                frame_path = os.path.join(src_frames_dir, f'frame_{i:06d}.png')
                 cache_image(
                     tensor=src_video[0][:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
