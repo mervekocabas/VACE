@@ -84,7 +84,6 @@ def run_inference(idx, video_name, prompt):
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_1.csv"
     df = pd.read_csv(csv_path, delimiter=';')
-    import ipdb; ipdb.set_trace()
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"], row["text"])
