@@ -348,44 +348,17 @@ def main(args):
         t5_cpu=args.t5_cpu,
     )
     
-    import ipdb; ipdb.set_trace()
     if args.frames_dir:
-         # Process frames exactly like VACE would process video
-         
-        #frame_paths = sorted(Path(args.frames_dir).glob("*.[pj][np]g"))
-        #frames=[Image.open(fp) for fp in frame_paths]
-        
         frame_paths = sorted([str(p) for p in Path(args.frames_dir).glob("*.[pj][np]g")])
         
         src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
                                                                   [args.src_mask],
-                                                                  frame_paths,
+                                                                  [frame_paths],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-        
-        processed = wan_vace.preprocess_frames_like_reference(
-            frames=frames,
-            target_size=SIZE_CONFIGS[args.size],
-            device=device
-        )
-        
-        import ipdb; ipdb.set_trace()
-        print(processed.shape)  # [3, num_frames, 832, 480]
-        target_size = SIZE_CONFIGS[args.size]
-        src_video = wan_vace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
-      
-        import ipdb; ipdb.set_trace()
+        src_video = torch.cat(src_ref_images[0], dim=1)
+        src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]), device=src_video.device)
         src_ref_images = [None]
-        
-        # Create mask (1=real frame, 0=padding)
-        num_real_frames = min(len(list(Path(args.frames_dir).glob("*.[pj][np]g"))), args.frame_num)
-        src_mask = torch.ones((1, num_real_frames, *target_size), device=device)
-        if num_real_frames < args.frame_num:
-            padding = torch.zeros((1, args.frame_num-num_real_frames, *target_size), device=device)
-            src_mask = torch.cat([src_mask, padding], dim=1)
-        src_video.to(device)
-        src_video = [src_video]
-        src_mask = [src_mask]
-    
+        import ipdb;ipdb.set_trace()
     else:
         src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
                                                                   [args.src_mask],
