@@ -215,7 +215,8 @@ def main(args):
 
     # processing
     pre_ins = getattr(annotators, class_name)(cfg=task_cfg, device=f'cuda:{os.getenv("RANK", 0)}')
-    results = pre_ins.forward(**input_data, input_filename=input_filename)
+    #results = pre_ins.forward(**input_data, input_filename=input_filename)
+    results = pre_ins.forward(**input_data)
 
     # output data
     save_fps = fps if fps is not None else save_fps
