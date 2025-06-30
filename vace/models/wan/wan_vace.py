@@ -435,49 +435,68 @@ class WanVace(WanT2V):
         return videos[0] if self.rank == 0 else None
     
     
-    def load_frames_as_vace(self, frames_dir, target_frames, target_size):
-        """Load frames and apply resize+crop to match VaceVideoProcessor's behavior"""
+    def load_frames_as_vace(self, frames_dir, target_frames, target_size, downsample=(1, 8, 8), seq_len=32760):
+        """
+        Load frames matching EXACTLY what VaceVideoProcessor produces
+        
+        Args:
+            frames_dir: Directory containing frames
+            target_frames: Number of frames (typically 81)
+            target_size: (height, width) tuple from SIZE_CONFIGS
+            downsample: (temporal, height, width) downsampling factors (default (1,8,8))
+            seq_len: Sequence length constraint (default 32760 for 480p)
+        """
         frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
         if not frame_files:
             raise ValueError(f"No frames found in {frames_dir}")
         
-        # Select frames (evenly spaced if too many)
+        # Select frames (evenly spaced)
         num_frames = len(frame_files)
         frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
         selected_files = [frame_files[i] for i in frame_indices]
         
+        # Get dimensions from first frame
+        first_frame = Image.open(selected_files[0])
+        original_height, original_width = first_frame.size[1], first_frame.size[0]
+        
+        # Calculate EXACT output dimensions matching VaceVideoProcessor
+        df, dh, dw = downsample
+        ratio = original_height / original_width
+        
+        # Same logic as _get_frameid_bbox in VaceVideoProcessor
+        area_z = min(seq_len, (original_height // dh) * (original_width // dw))
+        of = min((len(selected_files) - 1) // df + 1, int(seq_len / area_z))
+        target_area_z = min(area_z, int(seq_len / of))
+        
+        oh = round(np.sqrt(target_area_z * ratio))
+        ow = int(target_area_z / oh)
+        oh, ow = oh * dh, ow * dw  # Scale back up from latent space
+        
         processed_frames = []
         
         for frame_path in selected_files:
-            # Load image and convert to tensor [0,1] range first
             img = Image.open(frame_path).convert('RGB')
             img_tensor = TF.to_tensor(img)  # [C,H,W] in [0,1]
             
-            # Resize and center crop to target size
-            # 1. Resize maintaining aspect ratio
-            oh, ow = target_size  # target height and width
-            _, ih, iw = img_tensor.shape
-            scale = max(ow / iw, oh / ih)
-            new_h, new_w = int(ih * scale), int(iw * scale)
+            # Resize and crop to calculated dimensions
+            scale = max(ow / img_tensor.shape[2], oh / img_tensor.shape[1])
+            new_h = int(img_tensor.shape[1] * scale)
+            new_w = int(img_tensor.shape[2] * scale)
             img_tensor = F.interpolate(img_tensor.unsqueeze(0), 
-                                    size=(new_h, new_w), 
+                                    size=(new_h, new_w),
                                     mode='bicubic',
                                     align_corners=False).squeeze(0)
             
-            # 2. Center crop
+            # Center crop
             y1 = (img_tensor.shape[1] - oh) // 2
             x1 = (img_tensor.shape[2] - ow) // 2
             img_tensor = img_tensor[:, y1:y1+oh, x1:x1+ow]
             
-            # Normalize to [-1, 1] and add time dimension
-            img_tensor = img_tensor * 2 - 1  # [C,H,W]
-            img_tensor = img_tensor.unsqueeze(1).to(self.device)  # [C,1,H,W]
-            
-            processed_frames.append(img_tensor)
+            # Normalize and add time dim
+            img_tensor = img_tensor * 2 - 1  # [C,H,W] in [-1,1]
+            processed_frames.append(img_tensor.unsqueeze(1).to(self.device))
         
-        # Stack along time dimension [C,T,H,W]
-        video = torch.cat(processed_frames, dim=1)
-        
+        video = torch.cat(processed_frames, dim=1)  # [C,T,H,W]
         return video
 
     '''
