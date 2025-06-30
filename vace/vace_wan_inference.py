@@ -443,19 +443,17 @@ def main(args):
         src_frames_dir = os.path.join(save_dir, 'frames_src')
         os.makedirs(src_frames_dir, exist_ok=True)
         
-        import ipdb; ipdb.set_trace()
         if args.frames_dir:
-            for i in range(src_video.size(1)):
+            for i in range(src_video[0].shape[1]):
                 frame_path = os.path.join(src_frames_dir, f'frame_{i:04d}.png')
                 cache_image(
-                    tensor=src_video[:, i, ...],  # [C,1,H,W]
+                    tensor=src_video[0][:, i, ...],  # [C,1,H,W]
                     save_file=frame_path,
                     nrow=1,
                     normalize=True,
                     value_range=(-1, 1))
             ret_data['src_out_frames'] = src_frames_dir
-            logging.info(f"Saved {src_video.size(1)} processed input frames to {src_frames_dir}")
-
+            logging.info(f"Saved {src_video[0].shape[1]} processed input frames to {src_frames_dir}")
 
         save_file = os.path.join(save_dir, 'src_mask.mp4')
         cache_video(
