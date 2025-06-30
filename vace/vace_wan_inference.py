@@ -25,6 +25,7 @@ from annotators.utils import get_annotator
 import numpy as np
 from pathlib import Path
 import cv2
+import torchvision.transforms.functional as TF
 
 EXAMPLE_PROMPT = {
     "vace-1.3B": {
@@ -313,6 +314,33 @@ def main(args):
         t5_cpu=args.t5_cpu,
     )
     
+    def load_frames_as_video_tensor(frame_paths, video_processor, target_height, target_width):
+        # Load all frames as PIL images, convert to tensor, stack along time axis
+        frames = [Image.open(p).convert("RGB") for p in frame_paths]
+        frames = [TF.to_tensor(img).mul_(255).byte() for img in frames]  # [C, H, W], uint8
+        video = torch.stack(frames, dim=1)  # [C, T, H, W]
+        video = video.permute(1, 2, 3, 0)  # [T, H, W, C] for resize_crop
+        video = video.float()  # convert to float for interpolation
+        video = video_processor.resize_crop(video, target_height, target_width)  # [C, T, H, W], normalized
+        return video
+    
+    if args.frames_dir:
+        frame_paths = sorted([str(p) for p in Path(args.frames_dir).glob("*.[pj][np]g")])
+        # Get the video processor from wan_vace
+        video_processor = wan_vace.vid_proc
+        target_height, target_width = SIZE_CONFIGS[args.size]
+        # Load frames as a video tensor
+        src_video_tensor = load_frames_as_video_tensor(frame_paths, video_processor, target_height, target_width)
+        src_video = [src_video_tensor]
+        src_mask = [torch.ones((1, src_video_tensor.shape[1], src_video_tensor.shape[2], src_video_tensor.shape[3]))]
+        src_ref_images = [None]
+    else:
+        src_video, src_mask, src_ref_images = wan_vace.prepare_source([args.src_video],
+                                                                  [args.src_mask],
+                                                                  [None if args.src_ref_images is None else args.src_ref_images.split(',')],
+                                                                  args.frame_num, SIZE_CONFIGS[args.size], device)
+    import ipdb; ipdb.set_trace()
+    '''
     if args.frames_dir:
         frame_paths = sorted([str(p) for p in Path(args.frames_dir).glob("*.[pj][np]g")])
         
@@ -330,7 +358,7 @@ def main(args):
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-    
+    '''
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
