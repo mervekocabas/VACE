@@ -355,8 +355,10 @@ def main(args):
                                                                   [args.src_mask],
                                                                   [frame_paths],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-        src_video = torch.cat(src_ref_images[0], dim=1)
-        src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]), device=src_video.device)
+        src_video = torch.stack([frame.squeeze(1) for frame in src_ref_images[0]], dim=0)
+        src_mask = torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]),
+                      dtype=src_video.dtype,
+                      device=src_video.device)        
         src_ref_images = [None]
         import ipdb;ipdb.set_trace()
     else:
