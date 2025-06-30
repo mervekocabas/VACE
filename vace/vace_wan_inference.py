@@ -224,41 +224,6 @@ def _init_logging(rank):
     else:
         logging.basicConfig(level=logging.ERROR)
 
-'''
-def load_frames_as_vace(frames_dir, target_frames, target_size):
-    """Load and process frames exactly like VACE processes videos"""
-    frame_files = sorted(Path(frames_dir).glob("*.[pj][np]g"))
-    if not frame_files:
-        raise ValueError(f"No frames found in {frames_dir}")
-    
-    # Select frames (evenly spaced if too many)
-    num_frames = len(frame_files)
-    frame_indices = np.linspace(0, num_frames-1, min(num_frames, target_frames), dtype=int)
-    selected_files = [frame_files[i] for i in frame_indices]
-    
-    processed_frames = []
-    for frame_path in selected_files:
-        img = Image.open(frame_path)
-        
-        # Direct resize to target dimensions (no aspect ratio preservation)
-        img = img.resize(target_size[::-1], Image.LANCZOS)  # Size is (width, height)
-        img = np.array(img)
-        
-        # Normalize to [-1,1]
-        img = torch.from_numpy(img).float() / 127.5 - 1.0
-        processed_frames.append(img)
-    
-    # Stack into [C,T,H,W] tensor
-    video = torch.stack(processed_frames).permute(3,0,1,2)
-    
-    # Pad with zeros if needed
-    if video.shape[1] < target_frames:
-        padding = torch.zeros((3, target_frames-video.shape[1], *target_size), dtype=video.dtype)
-        video = torch.cat([video, padding], dim=1)
-    
-    return video  # Add batch dim
-'''
-
 def main(args):
     args = argparse.Namespace(**args) if isinstance(args, dict) else args
     args = validate_args(args)
@@ -356,7 +321,7 @@ def main(args):
                                                                   [frame_paths],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
         src_video = torch.cat(src_ref_images[0], dim=1)
-        src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]), device=src_video.device)
+        src_mask = torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]))
         src_video = [src_video]   
         src_mask = [src_mask]
         src_ref_images = [None]
