@@ -314,6 +314,7 @@ def main(args):
         t5_cpu=args.t5_cpu,
     )
     
+    '''
     def load_frames_as_video_tensor(frame_paths, video_processor, target_height, target_width):
         # Load all frames as PIL images, convert to tensor, stack along time axis
         frames = [Image.open(p).convert("RGB") for p in frame_paths]
@@ -339,7 +340,7 @@ def main(args):
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-    import ipdb; ipdb.set_trace()
+  
     '''
     if args.frames_dir:
         frame_paths = sorted([str(p) for p in Path(args.frames_dir).glob("*.[pj][np]g")])
@@ -358,7 +359,7 @@ def main(args):
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-    '''
+    
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
