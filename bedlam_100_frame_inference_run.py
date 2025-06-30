@@ -5,6 +5,45 @@ import os
 import numpy as np
 import re
 
+def concatenate_chunks_to_sequence_output():
+    base_result_dir = Path("results/fps_change")
+    final_output_dir = Path("results/bedlam_framebyframe_results")
+    final_output_dir.mkdir(exist_ok=True)
+
+    for scene_path in base_result_dir.iterdir():
+        if not scene_path.is_dir():
+            continue
+
+        for seq_path in scene_path.iterdir():
+            if not seq_path.is_dir():
+                continue
+
+            output_img_dir = final_output_dir / scene_path.name / seq_path.name / "img"
+            output_img_dir.mkdir(parents=True, exist_ok=True)
+
+            all_frame_files = []
+            for chunk_dir in sorted(seq_path.glob("chunk_*")):
+                chunk_id = int(chunk_dir.name.split("_")[-1])
+                frames_dir = chunk_dir / "frames"
+                if not frames_dir.exists():
+                    continue
+
+                # Get frame files sorted
+                frame_files = sorted(frames_dir.glob("frame_*.jpg"))
+
+                # Skip first 5 frames if not chunk 0
+                if chunk_id != 0:
+                    frame_files = frame_files[5:]
+
+                all_frame_files.extend(frame_files)
+
+            # Symlink or copy into final folder with continuous frame numbering
+            for i, frame_path in enumerate(all_frame_files):
+                target_path = output_img_dir / f"frame_{i:06d}.jpg"
+                target_path.symlink_to(frame_path.resolve())  # or use shutil.copy2 if you prefer copying
+
+            print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
+            
 def get_frame_chunks(frame_files, chunk_size=81):
     """Split frame files into chunks of 81 frames"""
     num_frames = len(frame_files)
@@ -97,3 +136,7 @@ if __name__ == "__main__":
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"], row["text"])
+    
+    # After all inferences are done, run post-processing
+    concatenate_chunks_to_sequence_output()
+    
