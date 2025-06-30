@@ -366,7 +366,6 @@ def main(args):
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
     
-    import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
@@ -429,7 +428,6 @@ def main(args):
             ret_data['out_frames'] = out_frames_dir
             logging.info(f"Saved {video.size(1)} output frames to {out_frames_dir}")
 
-        import ipdb; ipdb.set_trace()
         save_file = os.path.join(save_dir, 'src_video.mp4')
         cache_video(
             tensor=src_video[0][None],
@@ -445,6 +443,7 @@ def main(args):
         src_frames_dir = os.path.join(save_dir, 'frames_src')
         os.makedirs(src_frames_dir, exist_ok=True)
         
+        import ipdb; ipdb.set_trace()
         if args.frames_dir:
             for i in range(src_video.size(1)):
                 frame_path = os.path.join(src_frames_dir, f'frame_{i:04d}.png')
