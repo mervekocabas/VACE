@@ -63,7 +63,7 @@ def run_inference(idx, video_name, prompt):
             "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
             "--frames_dir", str(temp_dir),
             "--prompt", prompt,
-            "--save_dir", f"results/{scene_name}/seq_{seq_number}/chunk_{chunk_idx}"
+            "--save_dir", f"results/fps_change/{scene_name}/seq_{seq_number}/chunk_{chunk_idx}"
         ]
 
         env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
