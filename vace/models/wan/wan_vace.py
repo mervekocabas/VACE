@@ -505,6 +505,59 @@ class WanVace(WanT2V):
         video = torch.cat(processed_frames, dim=1)  # [C,T,H,W]
         print(f"Output video shape: {video.shape}")  # e.g., torch.Size([3, 81, 464, 848])
         return video
+    
+    def preprocess_frames_like_reference(frames, target_size, device):
+        """
+        Process frames using the same logic as prepare_source's reference image handling
+        
+        Args:
+            frames: List of PIL Images or file paths
+            target_size: (height, width) tuple
+            device: torch device
+        
+        Returns:
+            torch.Tensor: Processed frames [3, T, H, W] in [-1, 1] range
+        """
+        # Convert target_size to (width, height) like prepare_source does
+        target_size = (target_size[1], target_size[0])
+        
+        processed_frames = []
+        
+        for frame in frames:
+            # Load image if path is provided
+            if isinstance(frame, str):
+                frame = Image.open(frame).convert("RGB")
+            
+            # Apply same processing as reference images
+            frame_tensor = TF.to_tensor(frame).sub_(0.5).div_(0.5).unsqueeze(1)  # [3,1,H,W]
+            
+            # Handle size mismatch (center-pad with white)
+            if frame_tensor.shape[-2:] != target_size:
+                canvas_height, canvas_width = target_size
+                ref_height, ref_width = frame_tensor.shape[-2:]
+                
+                white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=device)
+                scale = min(canvas_height / ref_height, canvas_width / ref_width)
+                new_height = int(ref_height * scale)
+                new_width = int(ref_width * scale)
+                
+                resized = F.interpolate(
+                    frame_tensor.squeeze(1).unsqueeze(0), 
+                    size=(new_height, new_width), 
+                    mode='bilinear', 
+                    align_corners=False
+                ).squeeze(0).unsqueeze(1)
+                
+                # Center the resized image
+                top = (canvas_height - new_height) // 2
+                left = (canvas_width - new_width) // 2
+                white_canvas[:, :, top:top+new_height, left:left+new_width] = resized
+                frame_tensor = white_canvas
+            
+            processed_frames.append(frame_tensor.to(device))
+        
+        # Stack along time dimension [3,T,H,W]
+        return torch.cat(processed_frames, dim=1)
 
     '''
     # resizing 
