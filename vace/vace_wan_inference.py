@@ -352,7 +352,8 @@ def main(args):
     if args.frames_dir:
          # Process frames exactly like VACE would process video
         target_size = SIZE_CONFIGS[args.size]
-        src_video = wan_vace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size)
+        src_video = wan_vace.load_frames_as_vace(args.frames_dir, args.frame_num, target_size, device)
+      
         import ipdb; ipdb.set_trace()
         src_ref_images = [None]
         
