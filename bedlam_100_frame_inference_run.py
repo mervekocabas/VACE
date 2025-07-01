@@ -107,6 +107,7 @@ def run_inference(idx, video_name, prompt):
         for i, frame_path in enumerate(frame_chunk):
             (temp_dir / f"frame_{i + offset:06d}.jpg").symlink_to(frame_path.resolve())
         
+        '''
         # Run inference
         cmd = [
             "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
@@ -131,6 +132,7 @@ def run_inference(idx, video_name, prompt):
             for f in temp_dir.iterdir():
                 f.unlink()
             temp_dir.rmdir()
+        '''
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_1.csv"
