@@ -46,6 +46,7 @@ def concatenate_chunks_to_sequence_output():
             
 def get_frame_chunks(frame_files, chunk_size=81, overlap=5):
     """Split frame files into chunks of 81 frames with 5-frame overlap"""
+    import ipdb; ipdb.set_trace()
     num_frames = len(frame_files)
     step = chunk_size - overlap
     for i in range(0, num_frames, step):
