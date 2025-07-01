@@ -46,7 +46,6 @@ def concatenate_chunks_to_sequence_output():
             
 def get_frame_chunks(frame_files, chunk_size=81, overlap=5):
     """Split frame files into chunks of 81 frames with 5-frame overlap"""
-    import ipdb; ipdb.set_trace()
     num_frames = len(frame_files)
     step = chunk_size - overlap
     for i in range(0, num_frames, step):
@@ -83,7 +82,7 @@ def run_inference(idx, video_name, prompt):
     print(f"[{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
 
     # Process in chunks of 81 frames
-    import ipdb; ipdb.set_trace()
+   
     for chunk_idx, frame_chunk in enumerate(get_frame_chunks(frame_files)):
         chunk_size = len(frame_chunk)
         print(f"  Processing chunk {chunk_idx+1} with {chunk_size} frames")
@@ -91,7 +90,7 @@ def run_inference(idx, video_name, prompt):
         # Create temp directory for this chunk
         temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_chunk{chunk_idx}")
         temp_dir.mkdir(exist_ok=True)
-
+        import ipdb; ipdb.set_trace()
         # === NEW: Include last 5 frames from previous generated chunk ===
         offset = 0
         if chunk_idx != 0:
