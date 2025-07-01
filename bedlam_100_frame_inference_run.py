@@ -82,6 +82,7 @@ def run_inference(idx, video_name, prompt):
     print(f"[{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
 
     # Process in chunks of 81 frames
+    import ipdb; ipdb.set_trace()
     for chunk_idx, frame_chunk in enumerate(get_frame_chunks(frame_files)):
         chunk_size = len(frame_chunk)
         print(f"  Processing chunk {chunk_idx+1} with {chunk_size} frames")
@@ -132,11 +133,11 @@ def run_inference(idx, video_name, prompt):
             temp_dir.rmdir()
 
 if __name__ == "__main__":
-    #csv_path = "./vace_bedlam_100_dataset/final_metadata_1.csv"
-    #df = pd.read_csv(csv_path, delimiter=';')
+    csv_path = "./vace_bedlam_100_dataset/final_metadata_1.csv"
+    df = pd.read_csv(csv_path, delimiter=';')
 
-    #for idx, row in df.iterrows():
-    #    run_inference(idx, row["file_name"], row["text"])
+    for idx, row in df.iterrows():
+        run_inference(idx, row["file_name"], row["text"])
     
     # After all inferences are done, run post-processing
     concatenate_chunks_to_sequence_output()
