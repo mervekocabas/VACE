@@ -44,10 +44,11 @@ def concatenate_chunks_to_sequence_output():
 
             print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
             
-def get_frame_chunks(frame_files, chunk_size=81):
-    """Split frame files into chunks of 81 frames"""
+def get_frame_chunks(frame_files, chunk_size=81, overlap=5):
+    """Split frame files into chunks of 81 frames with 5-frame overlap"""
     num_frames = len(frame_files)
-    for i in range(0, num_frames, chunk_size):
+    step = chunk_size - overlap
+    for i in range(0, num_frames, step):
         yield frame_files[i:i + chunk_size]
 
 def parse_video_name(video_name):
