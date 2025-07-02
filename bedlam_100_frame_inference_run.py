@@ -63,36 +63,44 @@ def concatenate_chunks_to_sequence_output():
 
             print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
 
-def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[int, List[Path], List[Path]]]:
+def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[str, List[Path], List[Path]]]:
     """
-    Split frame files into chunks with special handling for the last chunk.
-    Returns a list of tuples: (chunk_number, frames_to_process, original_frames_used)
+    Splits frame files into chunks of `chunk_size` with `overlap` frames between them.
+    Ensures no frames are lost and every frame is included in at least one chunk.
+    The final chunk is padded from earlier frames if it's too short.
+    Returns a list of tuples: (chunk_name, frames_to_process, original_frames_used)
     """
     chunks = []
     num_frames = len(frame_files)
+    stride = chunk_size - overlap
     start = 0
-    
+    chunk_idx = 0
+
     while start < num_frames:
         end = start + chunk_size
-        chunk_frames = frame_files[start:end]
-        
-        # Handle last chunk if it's too small
-        if len(chunk_frames) < 40 and start > 0:
-            # Get additional frames from previous chunk
-            prev_start = max(0, start - (40 - len(chunk_frames)))
-            additional_frames = frame_files[prev_start:start]
-            chunk_frames = additional_frames + chunk_frames
-            
-            # Update the chunk name to include the additional frame range
-            chunk_name = f"chunk_{len(chunks)}_plus_{len(additional_frames)}"
-            chunks.append((chunk_name, chunk_frames, frame_files[prev_start:end]))
+        if end <= num_frames:
+            chunk_frames = frame_files[start:end]
+            chunk_name = f"chunk_{chunk_idx}"
+            chunks.append((chunk_name, chunk_frames, chunk_frames))
+        else:
+            # Not enough frames left; pad with earlier frames if needed
+            remaining_frames = frame_files[start:]
+            needed = chunk_size - len(remaining_frames)
+            if needed > 0 and start >= needed:
+                extra = frame_files[start - needed:start]
+                chunk_frames = extra + remaining_frames
+                chunk_name = f"chunk_{chunk_idx}_plus_{needed}"
+                chunks.append((chunk_name, chunk_frames, extra + remaining_frames))
+            else:
+                # If not enough to pad, just use remaining (e.g. for very short sequences)
+                chunk_frames = remaining_frames
+                chunk_name = f"chunk_{chunk_idx}"
+                chunks.append((chunk_name, chunk_frames, chunk_frames))
             break
-        
-        # Normal chunk
-        chunk_name = f"chunk_{len(chunks)}"
-        chunks.append((chunk_name, chunk_frames, frame_files[start:end]))
-        start = end - overlap  # Overlap by 5 frames
-    
+
+        start += stride
+        chunk_idx += 1
+
     return chunks
 
 def parse_video_name(video_name: str) -> Tuple[str, str]:
