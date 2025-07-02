@@ -5,6 +5,7 @@ import os
 import numpy as np
 import re
 from typing import List, Tuple
+import shutil
 
 def concatenate_chunks_to_sequence_output():
     base_result_dir = Path("results/fps_change")
@@ -198,26 +199,25 @@ def run_inference(idx: int, video_name: str, prompt: str):
         ]
         '''
         
-        if chunk_idx == 5:
-            cmd = [
-                "python", "vace/vace_wan_inference.py",
-                "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-                "--frames_dir", str(temp_dir),
-                "--prompt", prompt,
-                "--save_dir", str(output_dir)
-            ]
+        cmd = [
+            "python", "vace/vace_wan_inference.py",
+            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
+            "--frames_dir", str(temp_dir),
+            "--prompt", prompt,
+            "--save_dir", str(output_dir)
+        ]
                 
-            env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
+        env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
                 
+        try:
+            subprocess.run(cmd, env=env, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error processing {chunk_name}: {e}")
+        if temp_dir.exists():
             try:
-                subprocess.run(cmd, env=env, check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error processing {chunk_name}: {e}")
-            finally:
-                # Clean up temp directory
-                for f in temp_dir.iterdir():
-                    f.unlink()
-                temp_dir.rmdir()
+                shutil.rmtree(temp_dir)
+            except Exception as e:
+                print(f"[!] Failed to delete temp directory {temp_dir}: {e}")
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
