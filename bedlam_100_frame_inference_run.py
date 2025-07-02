@@ -144,11 +144,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
         print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
         # Create temp directory for this chunk
-        temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_{chunk_name}")
+        temp_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_framebyframe") / scene_name / f"seq_{seq_number.zfill(6)}" / f"temp_{scene_name}_seq{seq_number}_{chunk_name}"
         temp_dir.mkdir(exist_ok=True)
 
         frames_to_replace = 5
-        offset = 5  # Default: take last 5 frames from previous chunk
+        offset = 0  # Use
 
         # Check for "plus_X" in chunk name
         match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
