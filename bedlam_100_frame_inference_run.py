@@ -100,7 +100,7 @@ def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int
 
         start += stride
         chunk_idx += 1
-    import ipdb; ipdb.set_trace()
+
     return chunks
 
 def parse_video_name(video_name: str) -> Tuple[str, str]:
@@ -144,23 +144,25 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # Create temp directory for this chunk
         temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_{chunk_name}")
         temp_dir.mkdir(exist_ok=True)
-  
-        # Include last 5 frames from previous generated chunk if not first chunk
-        offset = 0
+
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx-1][0]
             prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))[-5:]
+                
+                # Add last 5 generated frames first
                 for i, frame_path in enumerate(prev_frames):
                     (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-                offset = 5
+                
+                # Now skip the first 5 from current chunk (since they were already generated)
+                frame_chunk = frame_chunk[5:]
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
 
-        # Symlink current chunk's frames after the previous 5 (if any)
-        for i, frame_path in enumerate(frame_chunk):
-            (temp_dir / f"frame_{i + offset:06d}.jpg").symlink_to(frame_path.resolve())
+        # Now add the remaining 76 new frames
+        for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
+            (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
