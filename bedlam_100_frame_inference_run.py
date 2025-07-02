@@ -4,11 +4,12 @@ from pathlib import Path
 import os
 import numpy as np
 import re
+from typing import List, Tuple
 
 def concatenate_chunks_to_sequence_output():
     base_result_dir = Path("results/fps_change")
     final_output_dir = Path("results/bedlam_framebyframe_results")
-    final_output_dir.mkdir(exist_ok=True)
+    final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
         if not scene_path.is_dir():
@@ -22,8 +23,10 @@ def concatenate_chunks_to_sequence_output():
             output_img_dir.mkdir(parents=True, exist_ok=True)
 
             all_frame_files = []
-            for chunk_dir in sorted(seq_path.glob("chunk_*")):
-                chunk_id = int(chunk_dir.name.split("_")[-1])
+            chunk_dirs = sorted(seq_path.glob("chunk_*"), key=lambda x: int(x.name.split('_')[1]))
+            
+            for chunk_dir in chunk_dirs:
+                chunk_name = chunk_dir.name
                 frames_dir = chunk_dir / "frames"
                 if not frames_dir.exists():
                     continue
@@ -31,34 +34,75 @@ def concatenate_chunks_to_sequence_output():
                 # Get frame files sorted
                 frame_files = sorted(frames_dir.glob("frame_*.jpg"))
 
-                # Skip first 5 frames if not chunk 0
-                if chunk_id != 0:
-                    frame_files = frame_files[5:]
-
-                all_frame_files.extend(frame_files)
+                # Special handling for chunks with additional frames
+                if "plus" in chunk_name:
+                    # This is a chunk that includes additional frames from itself
+                    # We need to skip the overlapping part carefully
+                    if len(all_frame_files) > 0:
+                        # Skip the last 5 frames from previous chunk
+                        all_frame_files = all_frame_files[:-5]
+                    
+                    # Add all frames from this special chunk
+                    all_frame_files.extend(frame_files)
+                else:
+                    # Normal chunk processing
+                    chunk_id = int(chunk_name.split("_")[1])
+                    if chunk_id != 0:
+                        # Skip first 5 frames if not chunk 0
+                        frame_files = frame_files[5:]
+                    all_frame_files.extend(frame_files)
 
             # Symlink or copy into final folder with continuous frame numbering
             for i, frame_path in enumerate(all_frame_files):
                 target_path = output_img_dir / f"frame_{i:06d}.jpg"
-                target_path.symlink_to(frame_path.resolve())  # or use shutil.copy2 if you prefer copying
+                if not target_path.exists():
+                    try:
+                        target_path.symlink_to(frame_path.resolve())
+                    except FileExistsError:
+                        pass  # Skip if symlink already exists
 
             print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
-            
-def get_frame_chunks(frame_files, chunk_size=81, overlap=5):
-    """Split frame files into chunks of 81 frames with 5-frame overlap"""
-    num_frames = len(frame_files)
-    step = chunk_size - overlap
-    for i in range(0, num_frames, step):
-        yield frame_files[i:i + chunk_size]
 
-def parse_video_name(video_name):
+def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[int, List[Path], List[Path]]]:
+    """
+    Split frame files into chunks with special handling for the last chunk.
+    Returns a list of tuples: (chunk_number, frames_to_process, original_frames_used)
+    """
+    chunks = []
+    num_frames = len(frame_files)
+    start = 0
+    
+    while start < num_frames:
+        end = start + chunk_size
+        chunk_frames = frame_files[start:end]
+        
+        # Handle last chunk if it's too small
+        if len(chunk_frames) < 40 and start > 0:
+            # Get additional frames from previous chunk
+            prev_start = max(0, start - (40 - len(chunk_frames)))
+            additional_frames = frame_files[prev_start:start]
+            chunk_frames = additional_frames + chunk_frames
+            
+            # Update the chunk name to include the additional frame range
+            chunk_name = f"chunk_{len(chunks)}_plus_{len(additional_frames)}"
+            chunks.append((chunk_name, chunk_frames, frame_files[prev_start:end]))
+            break
+        
+        # Normal chunk
+        chunk_name = f"chunk_{len(chunks)}"
+        chunks.append((chunk_name, chunk_frames, frame_files[start:end]))
+        start = end - overlap  # Overlap by 5 frames
+    
+    return chunks
+
+def parse_video_name(video_name: str) -> Tuple[str, str]:
     """Extract scene_name and seq_number from video_name (scene_name_seq_number.mp4)"""
     match = re.match(r"^(.+)_seq_(\d+)\.mp4$", video_name)
     if match:
         return match.group(1), match.group(2)
     return None, None
 
-def run_inference(idx, video_name, prompt):
+def run_inference(idx: int, video_name: str, prompt: str):
     # Parse scene_name and seq_number from video_name
     scene_name, seq_number = parse_video_name(video_name)
     if not scene_name or not seq_number:
@@ -81,20 +125,19 @@ def run_inference(idx, video_name, prompt):
         
     print(f"[{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
 
-    # Process in chunks of 81 frames
-   
-    for chunk_idx, frame_chunk in enumerate(get_frame_chunks(frame_files)):
+    # Process in chunks with special handling
+    for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(get_frame_chunks(frame_files)):
         chunk_size = len(frame_chunk)
-        print(f"  Processing chunk {chunk_idx+1} with {chunk_size} frames")
+        print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
         # Create temp directory for this chunk
-        temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_chunk{chunk_idx}")
+        temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_{chunk_name}")
         temp_dir.mkdir(exist_ok=True)
-        import ipdb; ipdb.set_trace()
-        # === NEW: Include last 5 frames from previous generated chunk ===
+  
+        # Include last 5 frames from previous generated chunk if not first chunk
         offset = 0
         if chunk_idx != 0:
-            prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/chunk_{chunk_idx - 1}/frames")
+            prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunks[chunk_idx-1][0]}/frames")
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))[-5:]
                 for i, frame_path in enumerate(prev_frames):
@@ -103,11 +146,14 @@ def run_inference(idx, video_name, prompt):
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
 
-        # Symlink current chunk's frames after the previous 5
+        # Symlink current chunk's frames after the previous 5 (if any)
         for i, frame_path in enumerate(frame_chunk):
             (temp_dir / f"frame_{i + offset:06d}.jpg").symlink_to(frame_path.resolve())
         
-        '''
+        # Create output directory with chunk name that includes additional frames info if any
+        output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
         # Run inference
         cmd = [
             "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
@@ -118,7 +164,7 @@ def run_inference(idx, video_name, prompt):
             "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
             "--frames_dir", str(temp_dir),
             "--prompt", prompt,
-            "--save_dir", f"results/fps_change/{scene_name}/seq_{seq_number}/chunk_{chunk_idx}"
+            "--save_dir", str(output_dir)
         ]
 
         env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
@@ -126,16 +172,15 @@ def run_inference(idx, video_name, prompt):
         try:
             subprocess.run(cmd, env=env, check=True)
         except subprocess.CalledProcessError as e:
-            print(f"Error processing chunk {chunk_idx}: {e}")
+            print(f"Error processing {chunk_name}: {e}")
         finally:
             # Clean up temp directory
             for f in temp_dir.iterdir():
                 f.unlink()
             temp_dir.rmdir()
-        '''
 
 if __name__ == "__main__":
-    csv_path = "./vace_bedlam_100_dataset/final_metadata_1.csv"
+    csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
     df = pd.read_csv(csv_path, delimiter=';')
 
     for idx, row in df.iterrows():
@@ -143,4 +188,3 @@ if __name__ == "__main__":
     
     # After all inferences are done, run post-processing
     concatenate_chunks_to_sequence_output()
-    
