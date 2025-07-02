@@ -145,18 +145,31 @@ def run_inference(idx: int, video_name: str, prompt: str):
         temp_dir = Path(f"temp_{scene_name}_seq{seq_number}_{chunk_name}")
         temp_dir.mkdir(exist_ok=True)
 
+        frames_to_replace = 5
+        offset = 5  # Default: take last 5 frames from previous chunk
+
+        # Check for "plus_X" in chunk name
+        match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
+        if match:
+            offset = int(match.group(1))  # start of padding range
+
         if chunk_idx != 0:
-            prev_chunk_name = chunks[chunk_idx-1][0]
+            prev_chunk_name = chunks[chunk_idx - 1][0]
             prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            
             if prev_output_dir.exists():
-                prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))[-5:]
+                prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
                 
-                # Add last 5 generated frames first
-                for i, frame_path in enumerate(prev_frames):
+                # Get 5 frames starting from -offset to -offset+5
+                start = -offset
+                end = start + frames_to_replace
+                prev_overlap_frames = prev_frames[start:end]
+                
+                for i, frame_path in enumerate(prev_overlap_frames):
                     (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
-                # Now skip the first 5 from current chunk (since they were already generated)
-                frame_chunk = frame_chunk[5:]
+                # Skip the first 5 overlapping frames from the current chunk
+                frame_chunk = frame_chunk[frames_to_replace:]
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
 
@@ -183,26 +196,27 @@ def run_inference(idx: int, video_name: str, prompt: str):
             "--save_dir", str(output_dir)
         ]
         '''
-            
-        cmd = [
-            "python", "vace/vace_wan_inference.py",
-            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-            "--frames_dir", str(temp_dir),
-            "--prompt", prompt,
-            "--save_dir", str(output_dir)
-        ]
-            
-        env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
-            
-        try:
-            subprocess.run(cmd, env=env, check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error processing {chunk_name}: {e}")
-        finally:
-            # Clean up temp directory
-            for f in temp_dir.iterdir():
-                f.unlink()
-            temp_dir.rmdir()
+        
+        if chunk_idx == 3:
+            cmd = [
+                "python", "vace/vace_wan_inference.py",
+                "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
+                "--frames_dir", str(temp_dir),
+                "--prompt", prompt,
+                "--save_dir", str(output_dir)
+            ]
+                
+            env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
+                
+            try:
+                subprocess.run(cmd, env=env, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error processing {chunk_name}: {e}")
+            finally:
+                # Clean up temp directory
+                for f in temp_dir.iterdir():
+                    f.unlink()
+                temp_dir.rmdir()
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
