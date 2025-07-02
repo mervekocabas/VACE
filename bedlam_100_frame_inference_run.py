@@ -100,7 +100,7 @@ def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int
 
         start += stride
         chunk_idx += 1
-
+    import ipdb; ipdb.set_trace()
     return chunks
 
 def parse_video_name(video_name: str) -> Tuple[str, str]:
