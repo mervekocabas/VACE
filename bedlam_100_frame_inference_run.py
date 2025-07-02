@@ -125,8 +125,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
     print(f"[{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
 
-    # Process in chunks with special handling
-    for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(get_frame_chunks(frame_files)):
+    # Get all chunks at once and store them
+    chunks = get_frame_chunks(frame_files)
+    
+    # Process each chunk
+    for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
         chunk_size = len(frame_chunk)
         print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
@@ -137,7 +140,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # Include last 5 frames from previous generated chunk if not first chunk
         offset = 0
         if chunk_idx != 0:
-            prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunks[chunk_idx-1][0]}/frames")
+            prev_chunk_name = chunks[chunk_idx-1][0]
+            prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))[-5:]
                 for i, frame_path in enumerate(prev_frames):
@@ -150,34 +154,37 @@ def run_inference(idx: int, video_name: str, prompt: str):
         for i, frame_path in enumerate(frame_chunk):
             (temp_dir / f"frame_{i + offset:06d}.jpg").symlink_to(frame_path.resolve())
         
-        # Create output directory with chunk name that includes additional frames info if any
+        # Create output directory with chunk name
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Run inference
-        cmd = [
-            "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
-            "--dit_fsdp",
-            "--t5_fsdp",
-            "--ulysses_size", "4",
-            "--ring_size", "2",
-            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-            "--frames_dir", str(temp_dir),
-            "--prompt", prompt,
-            "--save_dir", str(output_dir)
-        ]
+        if chunk_idx==0:
+            pass
+        else:
+            # Run inference
+            cmd = [
+                "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
+                "--dit_fsdp",
+                "--t5_fsdp",
+                "--ulysses_size", "4",
+                "--ring_size", "2",
+                "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
+                "--frames_dir", str(temp_dir),
+                "--prompt", prompt,
+                "--save_dir", str(output_dir)
+            ]
 
-        env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
-        
-        try:
-            subprocess.run(cmd, env=env, check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error processing {chunk_name}: {e}")
-        finally:
-            # Clean up temp directory
-            for f in temp_dir.iterdir():
-                f.unlink()
-            temp_dir.rmdir()
+            env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
+            
+            try:
+                subprocess.run(cmd, env=env, check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error processing {chunk_name}: {e}")
+            finally:
+                # Clean up temp directory
+                for f in temp_dir.iterdir():
+                    f.unlink()
+                temp_dir.rmdir()
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
