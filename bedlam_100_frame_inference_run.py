@@ -162,6 +162,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             pass
         else:
             # Run inference
+            '''
             cmd = [
                 "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
                 "--dit_fsdp",
@@ -173,7 +174,16 @@ def run_inference(idx: int, video_name: str, prompt: str):
                 "--prompt", prompt,
                 "--save_dir", str(output_dir)
             ]
-
+            '''
+            
+            cmd = [
+                "python", "vace/vace_wan_inference.py",
+                "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
+                "--frames_dir", str(temp_dir),
+                "--prompt", prompt,
+                "--save_dir", str(output_dir)
+            ]
+            
             env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
             
             try:
