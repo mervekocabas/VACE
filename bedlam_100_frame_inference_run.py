@@ -168,43 +168,41 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        if chunk_idx==0:
-            pass
-        else:
-            # Run inference
-            '''
-            cmd = [
-                "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
-                "--dit_fsdp",
-                "--t5_fsdp",
-                "--ulysses_size", "4",
-                "--ring_size", "2",
-                "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-                "--frames_dir", str(temp_dir),
-                "--prompt", prompt,
-                "--save_dir", str(output_dir)
-            ]
-            '''
+       
+        # Run inference
+        '''
+        cmd = [
+            "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
+            "--dit_fsdp",
+            "--t5_fsdp",
+            "--ulysses_size", "4",
+            "--ring_size", "2",
+            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
+            "--frames_dir", str(temp_dir),
+            "--prompt", prompt,
+            "--save_dir", str(output_dir)
+        ]
+        '''
             
-            cmd = [
-                "python", "vace/vace_wan_inference.py",
-                "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-                "--frames_dir", str(temp_dir),
-                "--prompt", prompt,
-                "--save_dir", str(output_dir)
-            ]
+        cmd = [
+            "python", "vace/vace_wan_inference.py",
+            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
+            "--frames_dir", str(temp_dir),
+            "--prompt", prompt,
+            "--save_dir", str(output_dir)
+        ]
             
-            env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
+        env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
             
-            try:
-                subprocess.run(cmd, env=env, check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Error processing {chunk_name}: {e}")
-            finally:
-                # Clean up temp directory
-                for f in temp_dir.iterdir():
-                    f.unlink()
-                temp_dir.rmdir()
+        try:
+            subprocess.run(cmd, env=env, check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error processing {chunk_name}: {e}")
+        finally:
+            # Clean up temp directory
+            for f in temp_dir.iterdir():
+                f.unlink()
+            temp_dir.rmdir()
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
