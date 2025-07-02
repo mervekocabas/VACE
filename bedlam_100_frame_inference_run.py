@@ -31,25 +31,26 @@ def concatenate_chunks_to_sequence_output():
                 if not frames_dir.exists():
                     continue
 
-                # Get frame files sorted
                 frame_files = sorted(frames_dir.glob("frame_*.jpg"))
 
-                # Special handling for chunks with additional frames
-                if "plus" in chunk_name:
-                    # This is a chunk that includes additional frames from itself
-                    # We need to skip the overlapping part carefully
+                if chunk_name == "chunk_0":
+                    # keep all frames
+                    all_frame_files.extend(frame_files)
+                elif "plus" in chunk_name:
+                    # Extract x from plus_x
+                    match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
+                    x = int(match.group(1)) if match else 5  # fallback to 5 if no match
+
+                    # Remove last 5 frames from previous chunk before adding this chunk's frames
                     if len(all_frame_files) > 0:
-                        # Skip the last 5 frames from previous chunk
                         all_frame_files = all_frame_files[:-5]
-                    
-                    # Add all frames from this special chunk
+
+                    # Skip first x frames of this plus chunk
+                    frame_files = frame_files[x:]
                     all_frame_files.extend(frame_files)
                 else:
-                    # Normal chunk processing
-                    chunk_id = int(chunk_name.split("_")[1])
-                    if chunk_id != 0:
-                        # Skip first 5 frames if not chunk 0
-                        frame_files = frame_files[5:]
+                    # Normal chunks except chunk_0: skip first 5 frames
+                    frame_files = frame_files[5:]
                     all_frame_files.extend(frame_files)
 
             # Symlink or copy into final folder with continuous frame numbering
@@ -197,7 +198,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         ]
         '''
         
-        if chunk_idx == 3:
+        if chunk_idx == 5:
             cmd = [
                 "python", "vace/vace_wan_inference.py",
                 "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
