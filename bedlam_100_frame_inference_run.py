@@ -169,6 +169,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
                     end = start + frames_to_replace
                     prev_overlap_frames = prev_frames[start:end]
                 else:
+                    import ipdb; ipdb.set_trace()
                     prev_overlap_frames = prev_frames[:-5]
                 
                 for i, frame_path in enumerate(prev_overlap_frames):
