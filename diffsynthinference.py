@@ -13,6 +13,7 @@ import numpy as np
 import re
 from typing import List, Tuple
 import shutil
+import imageio.v3 as iio
 
 # 1. Prepare pipeline
 #pipe = WanVideoPipeline.from_pretrained(
@@ -30,20 +31,33 @@ pipe = WanVideoPipeline.from_pretrained(
 )
 pipe.enable_vram_management()
 
-def frames_to_video(frames_dir, out_path, fps=15):
-    frame_paths = sorted(Path(frames_dir).glob("*.[pj][np]g"))
+def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
+    frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
     if not frame_paths:
-        raise ValueError(f"No frames found in {frames_dir}")
-    # Read first frame to get size
-    first_frame = cv2.imread(str(frame_paths[0]))
-    height, width = first_frame.shape[:2]
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    video_writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+        print(f"[!] No frames found in {frame_dir}")
+        return
+
+    frames = []
     for frame_path in frame_paths:
-        frame = cv2.imread(str(frame_path))
-        video_writer.write(frame)
-    video_writer.release()
-    return out_path
+        img = cv2.imread(str(frame_path))
+        if img is None:
+            print(f"[!] Failed to read: {frame_path}")
+            continue
+        # Convert BGR (OpenCV) to RGB for imageio
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        frames.append(img_rgb)
+
+    if not frames:
+        print("[!] No valid frames to write.")
+        return
+
+    output_video_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with iio.imopen(output_video_path, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=fps)
+        writer._video_stream.options = {"crf": str(crf)}
+        for frame in frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
 
 def concatenate_chunks_to_sequence_output():
     base_result_dir = Path("results/fps_change")
@@ -225,8 +239,16 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
+        # Copy frames into output_dir/frames/
+        output_frames_dir = output_dir / "frames"
+        output_frames_dir.mkdir(parents=True, exist_ok=True)
         
         import ipdb;ipdb.set_trace()
+        
+        # ✅ Save frames as video using ffmpeg
+        video_output_path = output_dir / f"{chunk_name}.mp4"
+        frames_to_video(output_frames_dir, video_output_path, fps=16)
+            
         # 2. If you have a directory of frames, convert to video
         frames_dir = "your_frames_dir"
         video_path = "temp_input_video.mp4"
