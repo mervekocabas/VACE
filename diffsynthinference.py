@@ -242,22 +242,10 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # Copy frames into output_dir/frames/
         output_frames_dir = output_dir / "frames"
         output_frames_dir.mkdir(parents=True, exist_ok=True)
-        
-        import ipdb;ipdb.set_trace()
-        
-        # ✅ Save frames as video using ffmpeg
-        video_output_path = output_dir / f"{chunk_name}.mp4"
-        frames_to_video(output_frames_dir, video_output_path, fps=16)
-            
-        # 2. If you have a directory of frames, convert to video
-        frames_dir = "your_frames_dir"
-        video_path = "temp_input_video.mp4"
-        frames_to_video(frames_dir, video_path, fps=15)
-
-        # 3. Prepare VideoData
-        control_video = VideoData(video_path, height=480, width=832)
-        
-        import ipdb;ipdb.set_trace()
+                
+        video_output_path = output_dir / f"src_{chunk_name}.mp4"
+        frames_to_video(temp_dir, video_output_path, fps=16)
+        control_video = VideoData(video_output_path, height=480, width=832)
         
         # 4. Run inference
         video = pipe(
@@ -267,7 +255,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         )
         
         import ipdb;ipdb.set_trace()
-        
+                
         # Run inference
         '''
         cmd = [
