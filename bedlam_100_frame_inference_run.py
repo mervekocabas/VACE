@@ -162,10 +162,14 @@ def run_inference(idx: int, video_name: str, prompt: str):
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
                 
-                # Get 5 frames starting from -offset to -offset+5
-                start = -offset
-                end = start + frames_to_replace
-                prev_overlap_frames = prev_frames[start:end]
+                
+                if 'plus' in chunk_name: 
+                    # Get 5 frames starting from -offset to -offset+5
+                    start = -offset
+                    end = start + frames_to_replace
+                    prev_overlap_frames = prev_frames[start:end]
+                else:
+                    prev_overlap_frames = prev_frames[:-5]
                 
                 for i, frame_path in enumerate(prev_overlap_frames):
                     (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
