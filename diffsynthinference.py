@@ -251,7 +251,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video = pipe(
             prompt=prompt,
             vace_video=control_video,
-            seed=1, tiled=True
+            seed=1, tiled=True,
+            device = torch.device('cuda')
         )
         
         import ipdb;ipdb.set_trace()
