@@ -29,14 +29,32 @@ pipe = WanVideoPipeline.from_pretrained(
 )
 '''
 pipe = WanVideoPipeline.from_pretrained(
-    "models/VACE-Wan2.1-14B",
-    redirect_common_files=False
+    torch_dtype=torch.bfloat16,
+    device="cuda",
+    redirect_common_files=False,
+    model_configs=[
+        ModelConfig(
+            model_id="models/VACE-Wan2.1-14B",
+            origin_file_pattern="diffusion_pytorch_model*.safetensors",
+            offload_device="cpu"
+        ),
+        ModelConfig(
+            model_id="models/VACE-Wan2.1-14B",
+            origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth",
+            offload_device="cpu"
+        ),
+        ModelConfig(
+            model_id="models/VACE-Wan2.1-14B",
+            origin_file_pattern="Wan2.1_VAE.pth",
+            offload_device="cpu"
+        ),
+    ]
 )
 
 pipe.enable_vram_management()
 
-for model in pipe.models.values():  # or however models are stored inside the pipeline
-    model.to(dtype=torch.bfloat16, device="cuda")
+#for model in pipe.models.values():  # or however models are stored inside the pipeline
+#    model.to(dtype=torch.bfloat16, device="cuda")
     
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
