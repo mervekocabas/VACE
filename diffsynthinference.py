@@ -16,21 +16,21 @@ import shutil
 import imageio.v3 as iio
 
 # 1. Prepare pipeline
-#pipe = WanVideoPipeline.from_pretrained(
-#    torch_dtype=torch.bfloat16,
-#    device="cuda",
-#    model_configs=[
-#        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
-#        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
-#        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
-#    ],
-#)
 pipe = WanVideoPipeline.from_pretrained(
-    "models/VACE-Wan2.1-14B",
-    device="cuda",
     torch_dtype=torch.bfloat16,
-    redirect_common_files=False
+    device="cuda",
+    model_configs=[
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
+    ],
 )
+#pipe = WanVideoPipeline.from_pretrained(
+#    "models/VACE-Wan2.1-14B",
+#    device="cuda",
+#    torch_dtype=torch.bfloat16,
+#    redirect_common_files=False
+#)
 pipe.enable_vram_management()
 
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
