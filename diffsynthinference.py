@@ -15,6 +15,8 @@ from typing import List, Tuple
 import shutil
 import imageio.v3 as iio
 
+from vace.models.utils.preprocessor import VaceVideoProcessor
+
 # 1. Prepare pipeline
 '''
 pipe = WanVideoPipeline.from_pretrained(
@@ -40,7 +42,70 @@ pipe = WanVideoPipeline.from_pretrained(
 )
 
 pipe.enable_vram_management()
-   
+
+vae_stride = (4, 8, 8)
+patch_size = (1, 2, 2)
+
+vid_proc = VaceVideoProcessor(downsample=tuple([x * y for x, y in zip(vae_stride, patch_size)]),
+            min_area=480 * 832,
+            max_area=480 * 832,
+            min_fps=16,
+            max_fps=16,
+            zero_start=True,
+            seq_len=32760,
+            keep_last=True)
+
+def prepare_source(src_video, src_mask, src_ref_images, num_frames, image_size, device):
+        area = image_size[0] * image_size[1]
+        vid_proc.set_area(area)
+        if area == 720*1280:
+            vid_proc.set_seq_len(75600)
+        elif area == 480*832:
+            vid_proc.set_seq_len(32760)
+        else:
+            raise NotImplementedError(f'image_size {image_size} is not supported')
+
+        image_size = (image_size[1], image_size[0])
+        image_sizes = []
+        for i, (sub_src_video, sub_src_mask) in enumerate(zip(src_video, src_mask)):
+            if sub_src_mask is not None and sub_src_video is not None:
+                src_video[i], src_mask[i], _, _, _ = vid_proc.load_video_pair(sub_src_video, sub_src_mask)
+                src_video[i] = src_video[i].to(device)
+                src_mask[i] = src_mask[i].to(device)
+                src_mask[i] = torch.clamp((src_mask[i][:1, :, :, :] + 1) / 2, min=0, max=1)
+                image_sizes.append(src_video[i].shape[2:])
+            elif sub_src_video is None:
+                src_video[i] = torch.zeros((3, num_frames, image_size[0], image_size[1]), device=device)
+                src_mask[i] = torch.ones_like(src_video[i], device=device)
+                image_sizes.append(image_size)
+            else:
+                src_video[i], _, _, _ = vid_proc.load_video(sub_src_video)
+                src_video[i] = src_video[i].to(device)
+                src_mask[i] = torch.ones_like(src_video[i], device=device)
+                image_sizes.append(src_video[i].shape[2:])
+
+        for i, ref_images in enumerate(src_ref_images):
+            if ref_images is not None:
+                image_size = image_sizes[i]
+                for j, ref_img in enumerate(ref_images):
+                    if ref_img is not None:
+                        ref_img = Image.open(ref_img).convert("RGB")
+                        ref_img = TF.to_tensor(ref_img).sub_(0.5).div_(0.5).unsqueeze(1)
+                        if ref_img.shape[-2:] != image_size:
+                            canvas_height, canvas_width = image_size
+                            ref_height, ref_width = ref_img.shape[-2:]
+                            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=device) # [-1, 1]
+                            scale = min(canvas_height / ref_height, canvas_width / ref_width)
+                            new_height = int(ref_height * scale)
+                            new_width = int(ref_width * scale)
+                            resized_image = F.interpolate(ref_img.squeeze(1).unsqueeze(0), size=(new_height, new_width), mode='bilinear', align_corners=False).squeeze(0).unsqueeze(1)
+                            top = (canvas_height - new_height) // 2
+                            left = (canvas_width - new_width) // 2
+                            white_canvas[:, :, top:top + new_height, left:left + new_width] = resized_image
+                            ref_img = white_canvas
+                        src_ref_images[i][j] = ref_img.to(device)
+        return src_video, src_mask, src_ref_images
+    
 def save_video_frames(video_frames, output_dir):
     frame_dir = os.path.join(output_dir, "frames")
     os.makedirs(frame_dir, exist_ok=True)
@@ -52,13 +117,11 @@ def save_video_frames(video_frames, output_dir):
 
     print(f"Saved {len(video_frames)} frames to {frame_dir}")
     
-    iio.imwrite(
-        output_dir,
-        video_frames,
-        fps=16,
-        codec='libx264',     # good default for mp4
-        pixelformat='yuv420p',  # ensures compatibility with most players
-    )
+    with iio.imopen(output_dir, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=16)
+        writer._video_stream.options = {"crf": str(23)}
+        for frame in video_frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
         
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
@@ -87,6 +150,7 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
         writer._video_stream.options = {"crf": str(crf)}
         for frame in frames:
             writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
+    return frames 
 
 def concatenate_chunks_to_sequence_output():
     base_result_dir = Path("results/fps_change")
@@ -273,13 +337,19 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_frames_dir.mkdir(parents=True, exist_ok=True)
                 
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
-        frames_to_video(temp_dir, video_output_path, fps=16)
-        control_video = VideoData(video_output_path, height=480, width=832)
+        import ipdb; ipdb.set_trace()
+        src_video = frames_to_video(temp_dir, video_output_path, fps=16)
+        #control_video = VideoData(video_output_path, height=480, width=832)
+        src_mask = [torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]))]
+        src_video, src_mask, src_ref_images = prepare_source([video_output_path],
+                                                             [src_mask],
+                                                             [None],
+                                                             81, 480, device="cuda")
         
         # 4. Run inference
         video = pipe(
             prompt=prompt,
-            vace_video=control_video,
+            vace_video=src_video,
             seed=1, tiled=True,
         )
         import ipdb;ipdb.set_trace()   
