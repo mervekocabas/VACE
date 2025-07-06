@@ -117,6 +117,14 @@ def save_video_frames(video_frames, output_dir):
 
     print(f"Saved {len(video_frames)} frames to {frame_dir}")
     
+    video_dir = os.path.join(output_dir, "out_video.mp4")
+    with iio.imopen(video_dir, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=16)
+        writer._video_stream.options = {"crf": str(23)}
+        for frame in video_frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
+    
+def save_video(video_frames, output_dir):    
     with iio.imopen(output_dir, "w", plugin="pyav") as writer:
         writer.init_video_stream("libx264", fps=16)
         writer._video_stream.options = {"crf": str(23)}
@@ -340,9 +348,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
         import ipdb; ipdb.set_trace()
         src_video = frames_to_video(temp_dir, video_output_path, fps=16)
         #control_video = VideoData(video_output_path, height=480, width=832)
+        mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         src_mask = [torch.ones((1, src_video.shape[1], src_video.shape[2], src_video.shape[3]))]
+        src_mask = save_video(src_mask, mask_output_path)
         src_video, src_mask, src_ref_images = prepare_source([video_output_path],
-                                                             [src_mask],
+                                                             [mask_output_path],
                                                              [None],
                                                              81, 480, device="cuda")
         
