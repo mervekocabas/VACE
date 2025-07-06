@@ -16,7 +16,7 @@ import shutil
 import imageio.v3 as iio
 
 # 1. Prepare pipeline
-'''
+
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
@@ -25,38 +25,9 @@ pipe = WanVideoPipeline.from_pretrained(
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
     ],
-    redirect_common_files=False 
-)
-'''
-pipe = WanVideoPipeline.from_pretrained(
-    model_configs=[
-        ModelConfig(
-            model_id=None,
-            local_model_path="models/VACE-Wan2.1-14B",
-            origin_file_pattern="diffusion_pytorch_model*.safetensors",
-            offload_device="cpu"
-        ),
-        ModelConfig(
-            model_id=None,
-            local_model_path="models/VACE-Wan2.1-14B",
-            origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth",
-            offload_device="cpu"
-        ),
-        ModelConfig(
-            model_id=None,
-            local_model_path="models/VACE-Wan2.1-14B",
-            origin_file_pattern="Wan2.1_VAE.pth",
-            offload_device="cpu"
-        ),
-    ],
-    redirect_common_files=False,
-    local_files_only=True,
 )
 
 pipe.enable_vram_management()
-
-#for model in pipe.models.values():  # or however models are stored inside the pipeline
-#    model.to(dtype=torch.bfloat16, device="cuda")
     
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
