@@ -16,7 +16,7 @@ import shutil
 import imageio.v3 as iio
 
 # 1. Prepare pipeline
-
+'''
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
@@ -25,6 +25,11 @@ pipe = WanVideoPipeline.from_pretrained(
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
     ],
+)
+'''
+pipe = WanVideoPipeline.from_pretrained(
+    model_id="Wan-AI/VACE-Wan2.1-14B",
+    redirect_common_files=False
 )
 
 pipe.enable_vram_management()
