@@ -24,11 +24,10 @@ pipe = WanVideoPipeline.from_pretrained(
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
     ],
+    redirect_common_files=False  # Optional, usually not needed
 )
 #pipe = WanVideoPipeline.from_pretrained(
 #    "models/VACE-Wan2.1-14B",
-#    device="cuda",
-#    torch_dtype=torch.bfloat16,
 #    redirect_common_files=False
 #)
 pipe.enable_vram_management()
