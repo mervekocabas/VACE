@@ -158,7 +158,13 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
         writer._video_stream.options = {"crf": str(crf)}
         for frame in frames:
             writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
-    return frames 
+            
+    video_np = np.stack(frames)  # Shape: (num_frames, H, W, C)
+    video_np = np.transpose(video_np, (0, 3, 1, 2))  # Now: (num_frames, C, H, W)
+
+    # Convert to torch tensor (optional)
+    video_tensor = torch.from_numpy(video_np).float()
+    return video_tensor
 
 def concatenate_chunks_to_sequence_output():
     base_result_dir = Path("results/fps_change")
