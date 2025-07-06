@@ -45,6 +45,15 @@ pipe.enable_vram_management()
 
 vae_stride = (4, 8, 8)
 patch_size = (1, 2, 2)
+SIZE_CONFIGS = {
+    '720*1280': (720, 1280),
+    '1280*720': (1280, 720),
+    '480*832': (480, 832),
+    '832*480': (832, 480),
+    '1024*1024': (1024, 1024),
+    '720p': (1280, 720),
+    '480p': (480, 832)
+}
 
 vid_proc = VaceVideoProcessor(downsample=tuple([x * y for x, y in zip(vae_stride, patch_size)]),
             min_area=480 * 832,
@@ -360,8 +369,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         src_video, src_mask, src_ref_images = prepare_source([video_output_path],
                                                              [""],
                                                              [None],
-                                                             81, 480, device="cuda")
-        
+                                                             81, SIZE_CONFIGS['480p'], device="cuda")
         # 4. Run inference
         video = pipe(
             prompt=prompt,
