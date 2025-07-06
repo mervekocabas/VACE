@@ -29,26 +29,28 @@ pipe = WanVideoPipeline.from_pretrained(
 )
 '''
 pipe = WanVideoPipeline.from_pretrained(
-    torch_dtype=torch.bfloat16,
-    device="cuda",
-    redirect_common_files=False,
     model_configs=[
         ModelConfig(
-            model_id="models/VACE-Wan2.1-14B",
+            model_id=None,
+            local_model_path="models/VACE-Wan2.1-14B",
             origin_file_pattern="diffusion_pytorch_model*.safetensors",
             offload_device="cpu"
         ),
         ModelConfig(
-            model_id="models/VACE-Wan2.1-14B",
+            model_id=None,
+            local_model_path="models/VACE-Wan2.1-14B",
             origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth",
             offload_device="cpu"
         ),
         ModelConfig(
-            model_id="models/VACE-Wan2.1-14B",
+            model_id=None,
+            local_model_path="models/VACE-Wan2.1-14B",
             origin_file_pattern="Wan2.1_VAE.pth",
             offload_device="cpu"
         ),
-    ]
+    ],
+    redirect_common_files=False,
+    local_files_only=True,
 )
 
 pipe.enable_vram_management()
