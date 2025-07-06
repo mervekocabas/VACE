@@ -366,7 +366,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         #src_mask = [torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))]
         #src_mask = save_video(src_mask, mask_output_path)
-        src_video, src_mask, src_ref_images = prepare_source([video_output_path],
+        src_video, src_mask, src_ref_images = prepare_source([str(video_output_path)],
                                                              [""],
                                                              [None],
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
