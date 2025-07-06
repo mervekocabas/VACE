@@ -27,6 +27,8 @@ import imageio.v3 as iio
 #)
 pipe = WanVideoPipeline.from_pretrained(
     "models/VACE-Wan2.1-14B",
+    device="cuda",
+    torch_dtype=torch.bfloat16,
     redirect_common_files=False
 )
 pipe.enable_vram_management()
@@ -252,7 +254,6 @@ def run_inference(idx: int, video_name: str, prompt: str):
             prompt=prompt,
             vace_video=control_video,
             seed=1, tiled=True,
-            device = torch.device('cuda')
         )
         
         import ipdb;ipdb.set_trace()
