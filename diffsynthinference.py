@@ -36,10 +36,30 @@ pipe = WanVideoPipeline.from_pretrained(
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
     ],
     skip_download = True,
+    
 )
 
 pipe.enable_vram_management()
+   
+def save_video_frames(video_frames, output_dir):
+    frame_dir = os.path.join(output_dir, "frames")
+    os.makedirs(frame_dir, exist_ok=True)
+
+    for idx, frame in enumerate(video_frames):
+        filename = f"frame_{idx:06d}.jpg"
+        path = os.path.join(frame_dir, filename)
+        frame.save(path)
+
+    print(f"Saved {len(video_frames)} frames to {frame_dir}")
     
+    iio.imwrite(
+        output_dir,
+        video_frames,
+        fps=16,
+        codec='libx264',     # good default for mp4
+        pixelformat='yuv420p',  # ensures compatibility with most players
+    )
+        
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
     if not frame_paths:
@@ -262,8 +282,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
             vace_video=control_video,
             seed=1, tiled=True,
         )
-        
-        import ipdb;ipdb.set_trace()
+        import ipdb;ipdb.set_trace()   
+        save_video_frames(video, output_dir)
+        import ipdb;ipdb.set_trace()        
                 
         # Run inference
         '''
