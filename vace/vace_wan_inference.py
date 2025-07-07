@@ -27,6 +27,7 @@ from pathlib import Path
 import cv2
 import torchvision.transforms.functional as TF
 import re
+import imageio.v3 as iio
 
 EXAMPLE_PROMPT = {
     "vace-1.3B": {
@@ -344,6 +345,14 @@ def main(args):
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
     import ipdb; ipdb.set_trace()
+    frames_tensor = src_video[0]  # shape: (3, 81, 848, 464)
+
+        # Rearrange to (81, 848, 464, 3)
+    frames_tensor = frames_tensor.permute(1, 3, 2, 0)  # (F, H, W, C)
+    video_np = frames_tensor.cpu().numpy()
+    
+    save_video(video_np, args.save_dir / "deneme.mp4")
+    import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
@@ -458,6 +467,12 @@ def main(args):
     logging.info("Finished.")
     return ret_data
 
+def save_video(video_frames, output_dir):    
+    with iio.imopen(output_dir, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=16)
+        writer._video_stream.options = {"crf": str(23)}
+        for frame in video_frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
 
 if __name__ == "__main__":
     args = get_parser().parse_args()
