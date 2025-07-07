@@ -372,6 +372,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         #src_video = src_video[0].cpu().numpy()
         # 4. Run inference
+        import ipdb; ipdb.set_trace()
         video = pipe(
             prompt=prompt,
             vace_video=control_video,
