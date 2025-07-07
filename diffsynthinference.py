@@ -381,6 +381,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video_np = frames_tensor.cpu().numpy()
         save_video(video_np, output_dir_c)
         '''
+        import ipdb; ipdb.set_trace()
         # 4. Run inference
         video = pipe(
             prompt=prompt,
