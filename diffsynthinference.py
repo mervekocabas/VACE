@@ -374,7 +374,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         frames_tensor = frames_tensor.permute(1, 2, 3, 0)  # (F, H, W, C)
 
         # Convert to list of numpy arrays
-        src_convid = [frame.cpu().numpy() for frame in frames_tensor]    
+        src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
+        import ipdb; ipdb.set_trace()  
         # 4. Run inference
         video = pipe(
             prompt=prompt,
