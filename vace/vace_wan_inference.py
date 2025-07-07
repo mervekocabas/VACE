@@ -344,7 +344,7 @@ def main(args):
                                                                   [args.src_mask],
                                                                   [None if args.src_ref_images is None else args.src_ref_images.split(',')],
                                                                   args.frame_num, SIZE_CONFIGS[args.size], device)
-    import ipdb; ipdb.set_trace()
+   
     frames_tensor = src_video[0]  # shape: (3, 81, 848, 464)
 
         # Rearrange to (81, 848, 464, 3)
