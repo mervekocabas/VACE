@@ -370,7 +370,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
                                                    
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
         
-        src_video = [src_video[0].cpu().numpy()]
+        src_video = src_video[0].cpu().numpy()
         # 4. Run inference
         video = pipe(
             prompt=prompt,
