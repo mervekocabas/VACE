@@ -365,7 +365,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         src_mask = torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
         save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
 
-        src_video, src_mask, src_ref_images = prepare_source([str(video_output_path)],
+        src_video, src_mask = prepare_source([str(video_output_path)],
                                                              [str(mask_output_path)],
                                                    
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
