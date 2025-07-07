@@ -215,14 +215,14 @@ def main(args):
 
     # processing
     pre_ins = getattr(annotators, class_name)(cfg=task_cfg, device=f'cuda:{os.getenv("RANK", 0)}')
-    #results = pre_ins.forward(**input_data, input_filename=input_filename)
-    results = pre_ins.forward(**input_data)
+    results = pre_ins.forward(**input_data, input_filename=input_filename)
+    #results = pre_ins.forward(**input_data)
 
     # output data
     save_fps = fps if fps is not None else save_fps
     if args.pre_save_dir is None:
-        #pre_save_dir = os.path.join('processed', 'generated_video_pose', input_filename)
-        pre_save_dir = os.path.join('processed', 'generated_firstframe')
+        pre_save_dir = os.path.join('processed', 'generated_video_pose', input_filename)
+        #pre_save_dir = os.path.join('processed', 'generated_firstframe')
     else:
         pre_save_dir = args.pre_save_dir
     if not os.path.exists(pre_save_dir):
