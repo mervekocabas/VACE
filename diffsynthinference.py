@@ -369,6 +369,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
                                                              [str(mask_output_path)],
                                                    
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
+        import ipdb;ipdb.set_trace()  
         # 4. Run inference
         video = pipe(
             prompt=prompt,
