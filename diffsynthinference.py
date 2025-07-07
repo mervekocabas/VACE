@@ -375,7 +375,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
         # Convert to list of numpy arrays
         src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
-        save_video_frames(src_video, output_dir)
+        save_video(src_video, output_dir)
         
         # 4. Run inference
         video = pipe(
