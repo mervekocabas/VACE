@@ -369,11 +369,21 @@ def run_inference(idx: int, video_name: str, prompt: str):
                                                              [str(mask_output_path)],
                                                    
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
+        
+        # src_video[0] shape: (3, T, H, W)
+        video_tensor = src_video[0]
+
+        # Rearrange to (T, H, W, 3)
+        frames = video_tensor.permute(1, 2, 3, 0)
+
+        # Convert to list of CPU numpy arrays (uint8 or float32)
+        video_frames = [frame.detach().cpu().numpy().astype(np.uint8) for frame in frames]
+
         import ipdb;ipdb.set_trace()  
         # 4. Run inference
         video = pipe(
             prompt=prompt,
-            vace_video=src_video,
+            vace_video=video_frames,
             seed=1, tiled=True,
         )
         import ipdb;ipdb.set_trace()   
