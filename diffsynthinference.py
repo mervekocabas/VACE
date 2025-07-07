@@ -93,27 +93,7 @@ def prepare_source(src_video, src_mask, src_ref_images, num_frames, image_size, 
                 src_mask[i] = torch.ones_like(src_video[i], device=device)
                 image_sizes.append(src_video[i].shape[2:])
 
-        for i, ref_images in enumerate(src_ref_images):
-            if ref_images is not None:
-                image_size = image_sizes[i]
-                for j, ref_img in enumerate(ref_images):
-                    if ref_img is not None:
-                        ref_img = Image.open(ref_img).convert("RGB")
-                        ref_img = TF.to_tensor(ref_img).sub_(0.5).div_(0.5).unsqueeze(1)
-                        if ref_img.shape[-2:] != image_size:
-                            canvas_height, canvas_width = image_size
-                            ref_height, ref_width = ref_img.shape[-2:]
-                            white_canvas = torch.ones((3, 1, canvas_height, canvas_width), device=device) # [-1, 1]
-                            scale = min(canvas_height / ref_height, canvas_width / ref_width)
-                            new_height = int(ref_height * scale)
-                            new_width = int(ref_width * scale)
-                            resized_image = F.interpolate(ref_img.squeeze(1).unsqueeze(0), size=(new_height, new_width), mode='bilinear', align_corners=False).squeeze(0).unsqueeze(1)
-                            top = (canvas_height - new_height) // 2
-                            left = (canvas_width - new_width) // 2
-                            white_canvas[:, :, top:top + new_height, left:left + new_width] = resized_image
-                            ref_img = white_canvas
-                        src_ref_images[i][j] = ref_img.to(device)
-        return src_video, src_mask, src_ref_images
+        return src_video, src_mask
     
 def save_video_frames(video_frames, output_dir):
     frame_dir = os.path.join(output_dir, "frames")
