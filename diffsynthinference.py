@@ -139,6 +139,24 @@ def save_video(video_frames, output_dir):
         writer._video_stream.options = {"crf": str(23)}
         for frame in video_frames:
             writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
+            
+def save_black_white_video_from_tensor(mask_tensor, output_path, fps=16):
+    """
+    Save a binary (0 or 1) mask tensor of shape (T, 1, H, W) as a black & white video.
+    """
+    assert mask_tensor.ndim == 4, "Expected shape (T, 1, H, W)"
+    mask_tensor = mask_tensor.squeeze(1)  # -> (T, H, W)
+
+    # Convert to uint8 [0, 255]
+    mask_numpy = (mask_tensor.detach().cpu().numpy() > 0).astype(np.uint8) * 255
+
+    with iio.imopen(str(output_path), "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=fps)
+        writer._video_stream.options = {"crf": "23"}
+
+        for frame in mask_numpy:
+            frame_rgb = np.stack([frame] * 3, axis=-1)  # (H, W, 3)
+            writer.write_frame(np.ascontiguousarray(frame_rgb, dtype=np.uint8))
         
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
@@ -364,11 +382,12 @@ def run_inference(idx: int, video_name: str, prompt: str):
         src_video = frames_to_video(temp_dir, video_output_path, fps=16)
         #control_video = VideoData(video_output_path, height=480, width=832)
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
-        #src_mask = [torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))]
-        #src_mask = save_video(src_mask, mask_output_path)
+        src_mask = [torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))]
+        save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
+
         import ipdb; ipdb.set_trace()
         src_video, src_mask, src_ref_images = prepare_source([str(video_output_path)],
-                                                             [""],
+                                                             [str(mask_output_path)],
                                                              [None],
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
         import ipdb; ipdb.set_trace()
