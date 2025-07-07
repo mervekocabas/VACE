@@ -16,6 +16,7 @@ import shutil
 import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
+import einops
 
 # 1. Prepare pipeline
 '''
@@ -376,7 +377,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # Convert to list of numpy arrays
         src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
         output_dir_c = output_dir / f"src_test_{chunk_name}.mp4"
-        save_video(src_video[0].permute(1, 0, 2, 3).cpu(), output_dir_c)
+        video_np = einops.rearrange(frames_tensor, "C T H W -> T H W C").cpu().numpy()
+        save_video(video_np, output_dir_c)
         
         # 4. Run inference
         video = pipe(
