@@ -377,6 +377,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # Convert to list of numpy arrays
         src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
         output_dir_c = output_dir / f"src_test_{chunk_name}.mp4"
+        import ipdb; ipdb.set_trace()
         video_np = einops.rearrange(frames_tensor, "C T H W -> T H W C").cpu().numpy()
         save_video(video_np, output_dir_c)
         
