@@ -64,7 +64,7 @@ vid_proc = VaceVideoProcessor(downsample=tuple([x * y for x, y in zip(vae_stride
             seq_len=32760,
             keep_last=True)
 
-def prepare_source(src_video, src_mask, src_ref_images, num_frames, image_size, device):
+def prepare_source(src_video, src_mask, num_frames, image_size, device):
         area = image_size[0] * image_size[1]
         vid_proc.set_area(area)
         if area == 720*1280:
@@ -367,7 +367,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
         src_video, src_mask, src_ref_images = prepare_source([str(video_output_path)],
                                                              [str(mask_output_path)],
-                                                             [None],
+                                                   
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
         # 4. Run inference
         video = pipe(
