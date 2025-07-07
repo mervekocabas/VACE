@@ -360,7 +360,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
         
         src_video = frames_to_video(temp_dir, video_output_path, fps=16)
-        #control_video = VideoData(video_output_path, height=480, width=832)
+        control_video = VideoData(video_output_path, height=480, width=832)
         #mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         #src_mask = torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
         #save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
@@ -374,7 +374,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # 4. Run inference
         video = pipe(
             prompt=prompt,
-            vace_video=src_video,
+            vace_video=control_video,
             seed=1, tiled=True,
         )
           
