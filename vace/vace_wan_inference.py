@@ -350,8 +350,9 @@ def main(args):
         # Rearrange to (81, 848, 464, 3)
     frames_tensor = frames_tensor.permute(1, 3, 2, 0)  # (F, H, W, C)
     video_np = frames_tensor.cpu().numpy()
-    
-    save_video(video_np, args.save_dir / "deneme.mp4")
+    bdir = os.path.join('results', args.model_name, args.frames_dir, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())), "deneme.mp4")
+    os.makedirs(bdir)
+    save_video(video_np, bdir )
     import ipdb; ipdb.set_trace()
     logging.info(f"Generating video...")
     video = wan_vace.generate(
