@@ -381,12 +381,20 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video_np = frames_tensor.cpu().numpy()
         save_video(video_np, output_dir_c)
         
+        convid_mask = [np.ones((frame.shape[0], frame.shape[1], 1), dtype=np.uint8) for frame in src_convid]
+        height_frame = src_convid[0].shape[0]
+        width_frame = src_convid[0].shape[1]
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video=src_convid,
+            vace_video_mask = convid_mask,
             seed=1, tiled=True,
+            height = height_frame,
+            width = width_frame,
         )
+        
+        import ipdb; ipdb.set_trace()
           
         save_video_frames(video, output_dir)
                 
