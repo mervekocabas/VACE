@@ -321,7 +321,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
         if match:
             offset = int(match.group(1))  # start of padding range
-
+        
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx - 1][0]
             prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
@@ -365,30 +365,34 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         src_mask = torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
-        save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
 
         src_video, src_mask = prepare_source([str(video_output_path)],
                                                              [str(mask_output_path)],
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
         frames_tensor = src_video[0]  # shape: (3, 81, 848, 464)
+        frames_mask = src_mask[0]
 
         # Rearrange to (81, 848, 464, 3)
         frames_tensor = frames_tensor.permute(1, 2, 3, 0)  # (F, H, W, C)
+        mask_tensor = frames_mask.permute(1, 2, 3, 0) 
 
         # Convert to list of numpy arrays
         src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
+        mask_convid = [frame.cpu().numpy() for frame in frames_mask]  
         output_dir_c = output_dir / f"src_test_{chunk_name}.mp4"
         video_np = frames_tensor.cpu().numpy()
+        mask_np = mask_tensor.cpu().numpy()
         save_video(video_np, output_dir_c)
+        save_video(mask_np, mask_output_path)
         
-        convid_mask = [np.ones((frame.shape[0], frame.shape[1], 1), dtype=np.uint8) for frame in src_convid]
         height_frame = src_convid[0].shape[0]
         width_frame = src_convid[0].shape[1]
+        
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video=src_convid,
-            vace_video_mask = convid_mask,
+            vace_video_mask = mask_convid,
             seed=1, tiled=True,
             height = height_frame,
             width = width_frame,
