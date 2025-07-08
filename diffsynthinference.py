@@ -372,6 +372,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
                                                              81, SIZE_CONFIGS['480p'], device="cuda")
         frames_tensor = src_video[0]  # shape: (3, 81, 848, 464)
         frames_mask = src_mask[0]
+        import ipdb;ipdb.set_trace()
 
         # Rearrange to (81, 848, 464, 3)
         frames_tensor = frames_tensor.permute(1, 2, 3, 0)  # (F, H, W, C)
@@ -383,6 +384,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_dir_c = output_dir / f"src_test_{chunk_name}.mp4"
         video_np = frames_tensor.cpu().numpy()
         mask_np = mask_tensor.cpu().numpy()
+        import ipdb;ipdb.set_trace()
         save_video(video_np, output_dir_c)
         mask_output_path_2 = output_dir / f"src_mask_{chunk_name}2.mp4"
         save_video(mask_np, mask_output_path_2)
