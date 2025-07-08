@@ -373,7 +373,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         frames_tensor = src_video[0]  # shape: (3, 81, 848, 464)
 
         # Rearrange to (81, 848, 464, 3)
-        frames_tensor = frames_tensor.permute(1, 3, 2, 0)  # (F, H, W, C)
+        frames_tensor = frames_tensor.permute(1, 2, 3, 0)  # (F, H, W, C)
 
         # Convert to list of numpy arrays
         src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
