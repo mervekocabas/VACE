@@ -387,7 +387,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         import ipdb;ipdb.set_trace()
         save_video(video_np, output_dir_c)
         mask_output_path_2 = output_dir / f"src_mask_{chunk_name}2.mp4"
-        save_video(mask_np, mask_output_path_2)
+        save_video(mask_np * 255, mask_output_path_2)
         
         height_frame = src_convid[0].shape[0]
         width_frame = src_convid[0].shape[1]
