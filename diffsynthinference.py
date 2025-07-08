@@ -365,6 +365,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         src_mask = torch.ones((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
+        save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
 
         src_video, src_mask = prepare_source([str(video_output_path)],
                                                              [str(mask_output_path)],
@@ -383,7 +384,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video_np = frames_tensor.cpu().numpy()
         mask_np = mask_tensor.cpu().numpy()
         save_video(video_np, output_dir_c)
-        save_video(mask_np, mask_output_path)
+        mask_output_path_1 = output_dir / f"src_mask_{chunk_name}2.mp4"
+        save_video(mask_np, mask_output_path_2)
         
         height_frame = src_convid[0].shape[0]
         width_frame = src_convid[0].shape[1]
