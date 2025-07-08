@@ -384,7 +384,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video_np = frames_tensor.cpu().numpy()
         mask_np = mask_tensor.cpu().numpy()
         save_video(video_np, output_dir_c)
-        mask_output_path_1 = output_dir / f"src_mask_{chunk_name}2.mp4"
+        mask_output_path_2 = output_dir / f"src_mask_{chunk_name}2.mp4"
         save_video(mask_np, mask_output_path_2)
         
         height_frame = src_convid[0].shape[0]
