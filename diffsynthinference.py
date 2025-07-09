@@ -232,42 +232,62 @@ def concatenate_chunks_to_sequence_output():
 
             print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
 
-def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[str, List[Path], List[Path]]]:
+def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[str, List[Path], List[int]]]:
     """
-    Splits frame files into chunks of `chunk_size` with `overlap` frames between them.
-    Ensures no frames are lost and every frame is included in at least one chunk.
-    The final chunk is padded from earlier frames if it's too short.
-    Returns a list of tuples: (chunk_name, frames_to_process, original_frames_used)
+    Custom chunking logic:
+    - If total frames <= 81: one chunk
+    - Else:
+        chunk_0: 81 input frames
+        chunk_i: 5 generated + 76 input frames
+        Final chunk:
+          * If >=76 input frames: as usual
+          * If <76: pad using previous input frames and adjust gen_frame_indices
+    Returns: list of (chunk_name, input_frame_paths, gen_frame_indices)
     """
+    total_frames = len(frame_files)
     chunks = []
-    num_frames = len(frame_files)
-    stride = chunk_size - overlap
-    start = 0
-    chunk_idx = 0
 
-    while start < num_frames:
-        end = start + chunk_size
-        if end <= num_frames:
-            chunk_frames = frame_files[start:end]
-            chunk_name = f"chunk_{chunk_idx}"
-            chunks.append((chunk_name, chunk_frames, chunk_frames))
+    if total_frames <= chunk_size:
+        chunks.append(("chunk_0", frame_files[:chunk_size], []))
+        return chunks
+
+    chunk_idx = 0
+    start = 0
+
+    # First chunk: normal 81 input frames
+    chunks.append(("chunk_0", frame_files[start:start + chunk_size], []))
+    start += chunk_size - overlap  # move 76 frames forward
+
+    while start < total_frames:
+        end = start + 76
+        if end <= total_frames:
+            chunk_name = f"chunk_{chunk_idx+1}"
+            input_frames = frame_files[start:end]
+            gen_frame_indices = list(range(-5, 0))  # use last 5 from generated
+            chunks.append((chunk_name, input_frames, gen_frame_indices))
         else:
-            # Not enough frames left; pad with earlier frames if needed
-            remaining_frames = frame_files[start:]
-            needed = chunk_size - len(remaining_frames)
-            if needed > 0 and start >= needed:
-                extra = frame_files[start - needed:start]
-                chunk_frames = extra + remaining_frames
-                chunk_name = f"chunk_{chunk_idx}_plus_{needed}"
-                chunks.append((chunk_name, chunk_frames, extra + remaining_frames))
+            # Final chunk: check how many are left
+            remaining = total_frames - start
+            if remaining >= 76:
+                chunk_name = f"chunk_{chunk_idx+1}"
+                input_frames = frame_files[start:start+76]
+                gen_frame_indices = list(range(-5, 0))
+                chunks.append((chunk_name, input_frames, gen_frame_indices))
             else:
-                # If not enough to pad, just use remaining (e.g. for very short sequences)
-                chunk_frames = remaining_frames
-                chunk_name = f"chunk_{chunk_idx}"
-                chunks.append((chunk_name, chunk_frames, chunk_frames))
+                # Need to pad
+                needed = 76 - remaining
+                if start - needed >= 0:
+                    padding = frame_files[start - needed:start]
+                    input_frames = padding + frame_files[start:]
+                    chunk_name = f"chunk_{chunk_idx+1}_plus_{needed}"
+                    # Instead of last 5 from generated, go before padding
+                    gen_frame_indices = list(range(-(needed + 5), -needed))
+                    chunks.append((chunk_name, input_frames, gen_frame_indices))
+                else:
+                    print("[!] Not enough input frames to pad final chunk")
             break
 
-        start += stride
+        start += 76
         chunk_idx += 1
 
     return chunks
@@ -398,7 +418,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         
-        vace_video_mask = [torch.zeros((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
+        vace_video_mask = [torch.ones((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
 
         # 4. Run inference
         video = pipe(
