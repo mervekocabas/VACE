@@ -410,7 +410,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
         
-        if 'plus' in chunk_name:
+        if '0' not in chunk_name:
             gen = 1
             
         if gen:
@@ -462,9 +462,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
             #sample_solver='unipc',
         )
         
-        #if dist.get_rank() == 0:
-        #    save_video_frames(video, output_dir)
-        save_video_frames(video, output_dir)       
+        if dist.get_rank() == 0:
+            save_video_frames(video, output_dir)
+        #save_video_frames(video, output_dir)       
         # Run inference
         '''
         cmd = [
