@@ -30,7 +30,7 @@ pipe = WanVideoPipeline.from_pretrained(
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
-    use_usp=True,
+    #use_usp=True,
     #redirect_common_files=False,
     model_configs=[
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
@@ -462,9 +462,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
             #sample_solver='unipc',
         )
         
-        if dist.get_rank() == 0:
-            save_video_frames(video, output_dir)
-        #save_video_frames(video, output_dir)       
+        #if dist.get_rank() == 0:
+        #    save_video_frames(video, output_dir)
+        save_video_frames(video, output_dir)       
         # Run inference
         '''
         cmd = [
