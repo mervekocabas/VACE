@@ -322,6 +322,16 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
     print(f"[{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
 
+    # Get height and width from the first frame (0th index)
+    with Image.open(frame_files[0]) as img:
+        width_frame, height_frame = img.size  # PIL returns (width, height)
+
+    # Swap dimensions if portrait mode (height > width)
+    if height_frame > width_frame:
+        height_frame, width_frame = 832, 480  # Portrait resolution
+    else:
+        height_frame, width_frame = 480, 832  # Landscape resolution
+        
     # Get all chunks at once and store them
     chunks = get_frame_chunks(frame_files)
     
@@ -378,7 +388,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_frames_dir.mkdir(parents=True, exist_ok=True)
                 
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
-        
+        '''
         src_video = frames_to_video(temp_dir, video_output_path, fps=16)
         
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
@@ -404,16 +414,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         save_video(video_np, output_dir_c)
         mask_output_path_2 = output_dir / f"src_mask_{chunk_name}2.mp4"
         save_video(mask_np * 255, mask_output_path_2)
-        
-        height_frame = src_convid[0].shape[0]
-        width_frame = src_convid[0].shape[1]
-        
-        if height_frame  >  width_frame:
-            height_frame = 832
-            width_frame = 480
-        else:
-            height_frame = 480
-            width_frame = 832
+        '''
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         
