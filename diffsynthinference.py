@@ -450,6 +450,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
+            import ipdb; ipdb.set_trace()
             control_video = [control_video_gen, control_video]
         
         if chunk_idx == 0:
