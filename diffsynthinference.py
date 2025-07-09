@@ -433,7 +433,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video = pipe(
             prompt=prompt,
             vace_video=control_video,
-            vace_video_mask = vace_video_mask,
+            #vace_video_mask = vace_video_mask,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
