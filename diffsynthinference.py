@@ -408,10 +408,13 @@ def run_inference(idx: int, video_name: str, prompt: str):
         if 'plus' in chunk_name:
             gen = 1
             
-        src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
+        
         if gen:
+            src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
             video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
             src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
+        else:
+            src_video = frames_to_video(temp_dir, video_output_path, fps=16)
         
         '''
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
