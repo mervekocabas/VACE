@@ -390,14 +390,21 @@ def run_inference(idx: int, video_name: str, prompt: str):
         height_frame = src_convid[0].shape[0]
         width_frame = src_convid[0].shape[1]
         
+        if height_frame  >  width_frame:
+            height_frame = 832
+            width_frame = 480
+        else:
+            height_frame = 480
+            width_frame = 832
+            
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video=src_convid,
             #vace_video_mask = mask_convid,
             seed=2025, tiled=True,
-            #height = height_frame,
-            #width = width_frame,
+            height = height_frame,
+            width = width_frame,
             sigma_shift = 16.0,
             #sample_solver='unipc',
         )
