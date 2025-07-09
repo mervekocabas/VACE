@@ -30,7 +30,7 @@ pipe = WanVideoPipeline.from_pretrained(
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
-    #use_usp=True,
+    use_usp=True,
     #redirect_common_files=False,
     model_configs=[
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
@@ -178,8 +178,8 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 def concatenate_chunks_to_sequence_output():
-    base_result_dir = Path("results/final_version")
-    final_output_dir = Path("results/bedlam_framebyframe_results_finalversion")
+    base_result_dir = Path("results/fps_change")
+    final_output_dir = Path("results/bedlam_framebyframe_results")
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
@@ -341,7 +341,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
     
     # Process each chunk
     for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
-        output_dir = Path(f"results/final_version/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_video = output_dir / "out_video.mp4"
         if output_video.exists():
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
@@ -364,7 +364,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx - 1][0]
-            prev_output_dir = Path(f"results/final_version/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            prev_output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
@@ -401,7 +401,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
-        output_dir = Path(f"results/final_version/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Copy frames into output_dir/frames/
@@ -462,9 +462,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
             #sample_solver='unipc',
         )
         
-        #if dist.get_rank() == 0:
-        #    save_video_frames(video, output_dir)
-        save_video_frames(video, output_dir)       
+        if dist.get_rank() == 0:
+            save_video_frames(video, output_dir)
+        #save_video_frames(video, output_dir)       
         # Run inference
         '''
         cmd = [
