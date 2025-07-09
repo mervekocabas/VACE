@@ -338,6 +338,12 @@ def run_inference(idx: int, video_name: str, prompt: str):
     
     # Process each chunk
     for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
+        output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_video = output_dir / "out_video.mp4"
+        if output_video.exists():
+            print(f"[✓] Skipping {chunk_name} — output video already exists.")
+            continue
+        
         chunk_size = len(frame_chunk)
         print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
