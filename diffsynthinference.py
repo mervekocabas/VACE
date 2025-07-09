@@ -388,8 +388,10 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_frames_dir.mkdir(parents=True, exist_ok=True)
                 
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
-        '''
         src_video = frames_to_video(temp_dir, video_output_path, fps=16)
+        
+        '''
+        
         
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         src_mask = torch.zeros((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
