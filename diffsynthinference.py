@@ -383,11 +383,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
             
             # Store generated frames in gen_temp_dir
             for i, frame_path in enumerate(prev_overlap_frames):
-                (gen_temp_dir / f"gen_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
             # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
             for i, frame_path in enumerate(frame_chunk[frames_to_replace:]):
-                (input_temp_dir / f"input_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
 
         # Now add the remaining 76 new frames
         for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
