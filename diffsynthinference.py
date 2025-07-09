@@ -379,6 +379,19 @@ def run_inference(idx: int, video_name: str, prompt: str):
         for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
             (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
+        gen_temp_dir = temp_dir / "generated_frames"
+        input_temp_dir = temp_dir / "input_frames"
+        gen_temp_dir.mkdir(exist_ok=True)
+        input_temp_dir.mkdir(exist_ok=True)
+        
+        # Store generated frames in gen_temp_dir
+        for i, frame_path in enumerate(prev_overlap_frames):
+            (gen_temp_dir / f"gen_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            
+        # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
+        for i, frame_path in enumerate(frame_chunk[frames_to_replace:]):
+            (input_temp_dir / f"input_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+        
         # Create output directory with chunk name
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -388,11 +401,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_frames_dir.mkdir(parents=True, exist_ok=True)
                 
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
-        src_video = frames_to_video(temp_dir, video_output_path, fps=16)
+        video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
+        src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
+        src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
         
         '''
-        
-        
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         src_mask = torch.zeros((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
         save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
@@ -419,6 +432,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
         '''
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
+        control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
+        
+        control_video = control_video_gen.append(control_video)
         
         if chunk_idx == 0:
             vace_video_mask = [torch.ones((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
