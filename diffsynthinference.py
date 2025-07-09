@@ -397,7 +397,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             width_frame = 832
             
         control_video = VideoData(video_output_path, height_frame, width_frame)
-            
+        import ipdb; ipdb.set_trace()
         # 4. Run inference
         video = pipe(
             prompt=prompt,
