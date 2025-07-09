@@ -347,6 +347,15 @@ def run_inference(idx: int, video_name: str, prompt: str):
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
             continue
         
+        # NEW: Check if all already exist
+        generated_frames_dir = output_dir / "src_frames" / "generated_frames"
+        input_frames_dir = output_dir / "src_frames" / "input_frames"
+        frames_dir = output_dir / "frames"
+
+        if generated_frames_dir.exists() and input_frames_dir.exists() and frames_dir.exists():
+            print(f"[✓] Skipping {chunk_name} — generated_frames, input_frames, and frames already exist.")
+            continue
+        
         chunk_size = len(frame_chunk)
         print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
@@ -419,32 +428,6 @@ def run_inference(idx: int, video_name: str, prompt: str):
             src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
         else:
             src_video = frames_to_video(src_frames_dir, video_output_path, fps=16)
-        
-        '''
-        mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
-        src_mask = torch.zeros((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
-        save_black_white_video_from_tensor(src_mask, mask_output_path, fps=16)
-
-        src_video, src_mask = prepare_source([str(video_output_path)],
-                                                             [str(mask_output_path)],
-                                                             81, SIZE_CONFIGS['480p'], device="cuda")
-        frames_tensor = src_video[0]  # shape: (3, 81, 848, 464)
-        frames_mask = src_mask[0]
-
-        # Rearrange to (81, 848, 464, 3)
-        frames_tensor = frames_tensor.permute(1, 2, 3, 0)  # (F, H, W, C)
-        frames_mask = frames_mask.permute(1, 2, 3, 0) 
-
-        # Convert to list of numpy arrays
-        src_convid = [frame.cpu().numpy() for frame in frames_tensor]  
-        mask_convid = [frame.cpu().numpy() for frame in frames_mask]  
-        output_dir_c = output_dir / f"src_test_{chunk_name}.mp4"
-        video_np = frames_tensor.cpu().numpy()
-        mask_np = frames_mask.cpu().numpy()
-        save_video(video_np, output_dir_c)
-        mask_output_path_2 = output_dir / f"src_mask_{chunk_name}2.mp4"
-        save_video(mask_np * 255, mask_output_path_2)
-        '''
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         if gen:
@@ -465,37 +448,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         if dist.get_rank() == 0:
             save_video_frames(video, output_dir)
         #save_video_frames(video, output_dir)       
-        # Run inference
-        '''
-        cmd = [
-            "torchrun", "--nproc_per_node=8", "vace/vace_wan_inference.py",
-            "--dit_fsdp",
-            "--t5_fsdp",
-            "--ulysses_size", "4",
-            "--ring_size", "2",
-            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-            "--frames_dir", str(temp_dir),
-            "--prompt", prompt,
-            "--save_dir", str(output_dir)
-        ]
-        
-        
-        cmd = [
-            "python", "vace/vace_wan_inference.py",
-            "--ckpt_dir", "models/VACE-Wan2.1-1.3B-Preview",
-            "--frames_dir", str(temp_dir),
-            "--prompt", prompt,
-            "--save_dir", str(output_dir)
-        ]
-                
-        env = {"PYTHONPATH": "/lustre/home/mkocabas/projects/VACE", **os.environ}
-                
-        try:
-            subprocess.run(cmd, env=env, check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error processing {chunk_name}: {e}")
-        '''
-
+       
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
     df = pd.read_csv(csv_path, delimiter=';')
