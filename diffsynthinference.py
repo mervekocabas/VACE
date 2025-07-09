@@ -397,17 +397,14 @@ def run_inference(idx: int, video_name: str, prompt: str):
             width_frame = 832
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
-        frame_shape = control_video[0].size  # (480, 832)
-        num_frames = len(control_video)
-
-        # Create a list of zero masks with the same shape
-        mask_video = [np.zeros(frame_shape, dtype=np.uint8) for _ in range(num_frames)]
         
+        vace_video_mask = [torch.zeros((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
+
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video=control_video,
-            vace_video_mask = mask_video,
+            vace_video_mask = vace_video_mask,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
