@@ -395,7 +395,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             prompt=prompt,
             vace_video=src_convid,
             #vace_video_mask = mask_convid,
-            seed=2025, tiled=True,
+            seed=2025, tiled=False,
             height = height_frame,
             width = width_frame,
             sample_solver='unipc',
