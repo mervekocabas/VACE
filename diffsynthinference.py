@@ -30,7 +30,7 @@ pipe = WanVideoPipeline.from_pretrained(
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
-    use_usp=True,
+    #use_usp=True,
     #redirect_common_files=False,
     model_configs=[
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
@@ -234,6 +234,11 @@ def concatenate_chunks_to_sequence_output():
                         pass  # Skip if symlink already exists
 
             print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
+            
+            # Also save video from these frames
+            final_video_path = final_output_dir / scene_path.name / seq_path.name / "out_video.mp4"
+            frames_to_video(output_img_dir, final_video_path, fps=16)
+            print(f"[✓] Saved combined video → {final_video_path}")
 
 def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[str, List[Path], List[int]]]:
     """
@@ -350,7 +355,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # NEW: Check if all already exist
         generated_frames_dir = output_dir / "src_frames" / "generated_frames"
         input_frames_dir = output_dir / "src_frames" / "input_frames"
-        frames_dir = output_dir / "frames"
+        frames_dir = output_dir / "src_frames"
 
         if generated_frames_dir.exists() and input_frames_dir.exists() and frames_dir.exists():
             print(f"[✓] Skipping {chunk_name} — generated_frames, input_frames, and frames already exist.")
@@ -385,29 +390,31 @@ def run_inference(idx: int, video_name: str, prompt: str):
                 else:
                     # Take last 5 frames of previous chunk
                     prev_overlap_frames = prev_frames[-5:]
-                
+              
                 for i, frame_path in enumerate(prev_overlap_frames):
                     (src_frames_dir/ f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
-                
-            gen_temp_dir = src_frames_dir / "generated_frames"
-            input_temp_dir = src_frames_dir / "input_frames"
-            gen_temp_dir.mkdir(exist_ok=True)
-            input_temp_dir.mkdir(exist_ok=True)
             
-            # Store generated frames in gen_temp_dir
-            for i, frame_path in enumerate(prev_overlap_frames):
-                (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-                
-            # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
-            for i, frame_path in enumerate(frame_chunk):
-                (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-
-        # Now add the remaining 76 new frames
-        for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
-            (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            if not generated_frames_dir.exists():  
+                gen_temp_dir = src_frames_dir / "generated_frames"
+                gen_temp_dir.mkdir(exist_ok=True)
+                # Store generated frames in gen_temp_dir
+                for i, frame_path in enumerate(prev_overlap_frames):
+                    (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            
+            if not input_frames_dir.exists():  
+                input_temp_dir = src_frames_dir / "input_frames"
+                input_temp_dir.mkdir(exist_ok=True)
+                # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
+                for i, frame_path in enumerate(frame_chunk):
+                    (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+        
+        if not frames_dir.exists():
+            # Now add the remaining 76 new frames
+            for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
+                (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
@@ -445,9 +452,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
             #sample_solver='unipc',
         )
         
-        if dist.get_rank() == 0:
-            save_video_frames(video, output_dir)
-        #save_video_frames(video, output_dir)       
+        #if dist.get_rank() == 0:
+        #    save_video_frames(video, output_dir)
+        save_video_frames(video, output_dir)       
        
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
