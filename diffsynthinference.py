@@ -418,7 +418,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         
         if chunk_idx == 0:
-            vace_video_mask = [torch.zeros((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
+            vace_video_mask = [torch.ones((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
         else:
             vace_video_mask = [] 
             for i in range(len(control_video)):
