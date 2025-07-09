@@ -65,6 +65,11 @@ vid_proc = VaceVideoProcessor(downsample=tuple([x * y for x, y in zip(vae_stride
             seq_len=32760,
             keep_last=True)
 
+def concatenate_videos(video_a, video_b):
+    frames_a = [video_a[i] for i in range(len(video_a))]
+    frames_b = [video_b[i] for i in range(len(video_b))]
+    return frames_a + frames_b
+
 def prepare_source(src_video, src_mask, num_frames, image_size, device):
         area = image_size[0] * image_size[1]
         vid_proc.set_area(area)
@@ -450,8 +455,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
+            control_video = concatenate_videos(control_video_gen, control_video)
             import ipdb; ipdb.set_trace()
-            control_video = [control_video_gen, control_video]
         
         if chunk_idx == 0:
             vace_video_mask = [torch.ones((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
