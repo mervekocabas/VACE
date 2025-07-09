@@ -18,8 +18,6 @@ import imageio.v3 as iio
 from vace.models.utils.preprocessor import VaceVideoProcessor
 import einops
 
-gen = 0 
-
 # 1. Prepare pipeline
 '''
 pipe = WanVideoPipeline.from_pretrained(
@@ -302,6 +300,7 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
     return None, None
 
 def run_inference(idx: int, video_name: str, prompt: str):
+    gen = 0 
     # Parse scene_name and seq_number from video_name
     scene_name, seq_number = parse_video_name(video_name)
     if not scene_name or not seq_number:
