@@ -217,7 +217,7 @@ def concatenate_chunks_to_sequence_output():
                         all_frame_files = all_frame_files[:-5]
 
                     # Skip first x frames of this plus chunk
-                    frame_files = frame_files[x:]
+                    frame_files = frame_files[x+5:]
                     all_frame_files.extend(frame_files)
                 else:
                     # Normal chunks except chunk_0: skip first 5 frames
