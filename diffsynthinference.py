@@ -398,7 +398,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             seed=2025, tiled=False,
             height = height_frame,
             width = width_frame,
-            sigma_shift = 16.0;
+            sigma_shift = 16.0,
             #sample_solver='unipc',
         )
         
