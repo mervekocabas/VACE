@@ -315,7 +315,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         temp_dir.mkdir(exist_ok=True)
 
         frames_to_replace = 5
-        offset = 0  # Use
+        offset = 5  # Use
 
         # Check for "plus_X" in chunk name
         match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
