@@ -377,12 +377,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
                     # Take last 5 frames of previous chunk
                     prev_overlap_frames = prev_frames[-5:]
                 
-                import ipdb; ipdb.set_trace()
                 for i, frame_path in enumerate(prev_overlap_frames):
                     (src_frames_dir/ f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
-                # Skip the first 5 overlapping frames from the current chunk
-                frame_chunk = frame_chunk[frames_to_replace:]
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
                 
@@ -396,7 +393,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
                 (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
             # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
-            for i, frame_path in enumerate(frame_chunk[frames_to_replace:]):
+            for i, frame_path in enumerate(frame_chunk):
                 (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
 
         # Now add the remaining 76 new frames
