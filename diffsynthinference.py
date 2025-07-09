@@ -352,15 +352,6 @@ def run_inference(idx: int, video_name: str, prompt: str):
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
             continue
         
-        # NEW: Check if all already exist
-        generated_frames_dir = output_dir / "src_frames" / "generated_frames"
-        input_frames_dir = output_dir / "src_frames" / "input_frames"
-        frames_dir = output_dir / "src_frames"
-
-        if generated_frames_dir.exists() and input_frames_dir.exists() and frames_dir.exists():
-            print(f"[✓] Skipping {chunk_name} — generated_frames, input_frames, and frames already exist.")
-            continue
-        
         chunk_size = len(frame_chunk)
         print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
@@ -397,24 +388,21 @@ def run_inference(idx: int, video_name: str, prompt: str):
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
             
-            if not generated_frames_dir.exists():  
-                gen_temp_dir = src_frames_dir / "generated_frames"
-                gen_temp_dir.mkdir(exist_ok=True)
-                # Store generated frames in gen_temp_dir
-                for i, frame_path in enumerate(prev_overlap_frames):
-                    (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            gen_temp_dir = src_frames_dir / "generated_frames"
+            gen_temp_dir.mkdir(exist_ok=True)
+            # Store generated frames in gen_temp_dir
+            for i, frame_path in enumerate(prev_overlap_frames):
+                (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
             
-            if not input_frames_dir.exists():  
-                input_temp_dir = src_frames_dir / "input_frames"
-                input_temp_dir.mkdir(exist_ok=True)
-                # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
-                for i, frame_path in enumerate(frame_chunk):
-                    (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            input_temp_dir = src_frames_dir / "input_frames"
+            input_temp_dir.mkdir(exist_ok=True)
+            # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
+            for i, frame_path in enumerate(frame_chunk):
+                (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
-        if not frames_dir.exists():
-            # Now add the remaining 76 new frames
-            for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
-                (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+        # Now add the remaining 76 new frames
+        for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
+            (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
         output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
