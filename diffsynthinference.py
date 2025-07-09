@@ -351,12 +351,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
                 
                 
                 if 'plus' in chunk_name: 
-                    # Get 5 frames starting from -offset to -offset+5
-                    start = -offset
-                    end = start + frames_to_replace
-                    prev_overlap_frames = prev_frames[start:end]
+                    # Get the 5 frames before the padding begins
+                    prev_overlap_frames = prev_frames[-(offset + 5):-offset]
                 else:
-                    prev_overlap_frames = prev_frames[:-5]
+                    # Take last 5 frames of previous chunk
+                    prev_overlap_frames = prev_frames[-5:]
                 
                 for i, frame_path in enumerate(prev_overlap_frames):
                     (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
@@ -418,8 +417,17 @@ def run_inference(idx: int, video_name: str, prompt: str):
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
         
-        vace_video_mask = [torch.zeros((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
-
+        if chunk_idx == 0:
+            vace_video_mask = [torch.zeros((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
+        else:
+            vace_video_mask = [] 
+            for i in range(len(control_video)):
+                if i < 5:
+                    mask = torch.ones((height_frame, width_frame, 1), dtype=torch.float32)
+                else:
+                    mask = torch.zeros((height_frame, width_frame, 1), dtype=torch.float32)
+                vace_video_mask.append(mask)
+                
         # 4. Run inference
         video = pipe(
             prompt=prompt,
