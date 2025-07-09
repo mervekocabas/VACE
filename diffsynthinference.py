@@ -397,7 +397,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             width_frame = 832
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
-        frame_shape = control_video[0].shape  # (480, 832)
+        frame_shape = control_video[0].size  # (480, 832)
         num_frames = len(control_video)
 
         # Create a list of zero masks with the same shape
