@@ -398,7 +398,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
             seed=2025, tiled=False,
             height = height_frame,
             width = width_frame,
-            sample_solver='unipc',
+            sigma_shift = 16.0;
+            #sample_solver='unipc',
         )
         
         import ipdb; ipdb.set_trace()
