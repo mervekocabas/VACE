@@ -361,7 +361,6 @@ def run_inference(idx: int, video_name: str, prompt: str):
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
         
         src_video = frames_to_video(temp_dir, video_output_path, fps=16)
-        #control_video = VideoData(video_output_path, 480, 832)
         
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
         src_mask = torch.zeros((src_video.shape[0], 1, src_video.shape[2], src_video.shape[3]))
@@ -397,10 +396,12 @@ def run_inference(idx: int, video_name: str, prompt: str):
             height_frame = 480
             width_frame = 832
             
+        control_video = VideoData(video_output_path, height_frame, width_frame)
+            
         # 4. Run inference
         video = pipe(
             prompt=prompt,
-            vace_video=src_convid,
+            vace_video=control_video,
             #vace_video_mask = mask_convid,
             seed=2025, tiled=True,
             height = height_frame,
