@@ -18,6 +18,8 @@ import imageio.v3 as iio
 from vace.models.utils.preprocessor import VaceVideoProcessor
 import einops
 
+gen = 0 
+
 # 1. Prepare pipeline
 '''
 pipe = WanVideoPipeline.from_pretrained(
@@ -374,23 +376,23 @@ def run_inference(idx: int, video_name: str, prompt: str):
                 frame_chunk = frame_chunk[frames_to_replace:]
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
+                
+            gen_temp_dir = temp_dir / "generated_frames"
+            input_temp_dir = temp_dir / "input_frames"
+            gen_temp_dir.mkdir(exist_ok=True)
+            input_temp_dir.mkdir(exist_ok=True)
+            
+            # Store generated frames in gen_temp_dir
+            for i, frame_path in enumerate(prev_overlap_frames):
+                (gen_temp_dir / f"gen_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                
+            # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
+            for i, frame_path in enumerate(frame_chunk[frames_to_replace:]):
+                (input_temp_dir / f"input_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
 
         # Now add the remaining 76 new frames
         for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
             (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-        
-        gen_temp_dir = temp_dir / "generated_frames"
-        input_temp_dir = temp_dir / "input_frames"
-        gen_temp_dir.mkdir(exist_ok=True)
-        input_temp_dir.mkdir(exist_ok=True)
-        
-        # Store generated frames in gen_temp_dir
-        for i, frame_path in enumerate(prev_overlap_frames):
-            (gen_temp_dir / f"gen_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-            
-        # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
-        for i, frame_path in enumerate(frame_chunk[frames_to_replace:]):
-            (input_temp_dir / f"input_frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
@@ -399,11 +401,17 @@ def run_inference(idx: int, video_name: str, prompt: str):
         # Copy frames into output_dir/frames/
         output_frames_dir = output_dir / "frames"
         output_frames_dir.mkdir(parents=True, exist_ok=True)
-                
+        
+        
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
-        video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
+        
+        if 'plus' in chunk_name:
+            gen = 1
+            
         src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
-        src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
+        if gen:
+            video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
+            src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
         
         '''
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
@@ -432,9 +440,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
         '''
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
-        control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
-        
-        control_video = control_video_gen.append(control_video)
+        if gen:
+            control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
+            control_video = control_video_gen.append(control_video)
         
         if chunk_idx == 0:
             vace_video_mask = [torch.ones((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
