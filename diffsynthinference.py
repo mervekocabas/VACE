@@ -8,16 +8,13 @@ from diffsynth import save_video, VideoData
 from diffsynth.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
 
 import pandas as pd
-import subprocess
 import numpy as np
 import re
 from typing import List, Tuple
-import shutil
 import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
-import einops
-
+import torch.distributed as dist
 # 1. Prepare pipeline
 '''
 pipe = WanVideoPipeline.from_pretrained(
@@ -33,6 +30,7 @@ pipe = WanVideoPipeline.from_pretrained(
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
+    #use_usp=True,
     #redirect_common_files=False,
     model_configs=[
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
@@ -353,8 +351,8 @@ def run_inference(idx: int, video_name: str, prompt: str):
         print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
         # Create temp directory for this chunk
-        temp_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_framebyframe") / scene_name / f"seq_{seq_number.zfill(6)}" / f"temp_{scene_name}_seq{seq_number}_{chunk_name}"
-        temp_dir.mkdir(exist_ok=True)
+        src_frames_dir = output_dir / "src_frames"
+        src_frames_dir.mkdir(parents=True, exist_ok=True)
 
         frames_to_replace = 5
         offset = 5  # Use
@@ -379,16 +377,17 @@ def run_inference(idx: int, video_name: str, prompt: str):
                     # Take last 5 frames of previous chunk
                     prev_overlap_frames = prev_frames[-5:]
                 
+                import ipdb; ipdb.set_trace()
                 for i, frame_path in enumerate(prev_overlap_frames):
-                    (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                    (src_frames_dir/ f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
                 # Skip the first 5 overlapping frames from the current chunk
                 frame_chunk = frame_chunk[frames_to_replace:]
             else:
                 print(f"[!] Previous chunk frames not found at {prev_output_dir}")
                 
-            gen_temp_dir = temp_dir / "generated_frames"
-            input_temp_dir = temp_dir / "input_frames"
+            gen_temp_dir = src_frames_dir / "generated_frames"
+            input_temp_dir = src_frames_dir / "input_frames"
             gen_temp_dir.mkdir(exist_ok=True)
             input_temp_dir.mkdir(exist_ok=True)
             
@@ -402,7 +401,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
         # Now add the remaining 76 new frames
         for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
-            (temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
         output_dir = Path(f"results/fps_change/{scene_name}/seq_{seq_number}/{chunk_name}")
@@ -412,19 +411,17 @@ def run_inference(idx: int, video_name: str, prompt: str):
         output_frames_dir = output_dir / "frames"
         output_frames_dir.mkdir(parents=True, exist_ok=True)
         
-        
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
         
         if 'plus' in chunk_name:
             gen = 1
             
-        
         if gen:
             src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
             video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
             src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
         else:
-            src_video = frames_to_video(temp_dir, video_output_path, fps=16)
+            src_video = frames_to_video(src_frames_dir, video_output_path, fps=16)
         
         '''
         mask_output_path = output_dir / f"src_mask_{chunk_name}.mp4"
@@ -456,23 +453,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
-        
-        if chunk_idx == 0:
-            vace_video_mask = [torch.ones((height_frame, width_frame , 1), dtype=torch.float32) for _ in range(len(control_video))]
-        else:
-            vace_video_mask = [] 
-            for i in range(len(control_video)):
-                if i < 5:
-                    mask = torch.ones((height_frame, width_frame, 1), dtype=torch.float32)
-                else:
-                    mask = torch.zeros((height_frame, width_frame, 1), dtype=torch.float32)
-                vace_video_mask.append(mask)
                 
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video=control_video,
-            #vace_video_mask = vace_video_mask,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
@@ -480,10 +465,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
             #sample_solver='unipc',
         )
         
-        import ipdb; ipdb.set_trace()
-          
-        save_video_frames(video, output_dir)
-                
+        #if dist.get_rank() == 0:
+        #    save_video_frames(video, output_dir)
+        save_video_frames(video, output_dir)       
         # Run inference
         '''
         cmd = [
@@ -514,11 +498,6 @@ def run_inference(idx: int, video_name: str, prompt: str):
         except subprocess.CalledProcessError as e:
             print(f"Error processing {chunk_name}: {e}")
         '''
-        if temp_dir.exists():
-            try:
-                shutil.rmtree(temp_dir)
-            except Exception as e:
-                print(f"[!] Failed to delete temp directory {temp_dir}: {e}")
 
 if __name__ == "__main__":
     csv_path = "./vace_bedlam_100_dataset/final_metadata_2.csv"
