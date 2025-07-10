@@ -203,8 +203,8 @@ def concatenate_chunks_to_sequence_output():
             # Save videos
             final_video_path = final_output_dir / scene_path.name / seq_path.name / "out_video.mp4"
             final_src_video_path = final_output_dir / scene_path.name / seq_path.name / "src_video.mp4"
-            frames_to_video(output_img_dir, final_video_path, fps=16)
-            frames_to_video(output_src_img_dir, final_src_video_path, fps=16)
+            frames_to_video(output_img_dir, final_video_path, fps=30)
+            frames_to_video(output_src_img_dir, final_src_video_path, fps=30)
 
             print(f"[✓] Saved output video → {final_video_path}")
             print(f"[✓] Saved source video → {final_src_video_path}")
