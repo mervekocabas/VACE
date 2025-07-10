@@ -381,6 +381,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             control_video = concatenate_videos(control_video_gen, control_video)
             control_mask[:5] = 0
         
+        import ipdb; ipdb.set_trace()
         # 4. Run inference
         video = pipe(
             prompt=prompt,
