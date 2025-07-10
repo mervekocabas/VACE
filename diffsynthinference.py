@@ -14,23 +14,11 @@ from typing import List, Tuple
 import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
-import torch.distributed as dist
+
 # 1. Prepare pipeline
-'''
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
     device="cuda",
-    model_configs=[
-        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
-        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
-        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
-    ],
-)
-'''
-pipe = WanVideoPipeline.from_pretrained(
-    torch_dtype=torch.bfloat16,
-    device="cuda",
-    #use_usp=True,
     #redirect_common_files=False,
     model_configs=[
         ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
@@ -388,20 +376,19 @@ def run_inference(idx: int, video_name: str, prompt: str):
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
-                
+        
         # 4. Run inference
         video = pipe(
             prompt=prompt,
-            vace_video=control_video,
+            vace_video = control_video,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
             sigma_shift = 16.0,
+            negative_prompt = "deformed, disfigured, mutated, bad anatomy, unrealistic body, extra limbs, extra fingers, fused fingers, missing fingers, poorly drawn hands, malformed hands, unnatural pose, distorted face, ugly face, poorly drawn face, blurry face, low detail face, bad eyes, crossed eyes, asymmetrical eyes, low resolution, bad quality, low quality, jpeg artifacts, watermark, signature, text, caption, blurry, grainy, noisy, overexposed, underexposed, bad lighting, duplicated limbs, extra arms, extra legs, broken limb, clone face, lopsided, twisted, unnatural skin texture, skin blemish, unnatural colors, zombie, monster, doll, mannequin, uncanny valley",
             #sample_solver='unipc',
         )
         
-        #if dist.get_rank() == 0:
-        #    save_video_frames(video, output_dir)
         save_video_frames(video, output_dir)       
        
 if __name__ == "__main__":
