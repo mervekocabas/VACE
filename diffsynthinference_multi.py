@@ -383,9 +383,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
         for i in range(81):
             if gen and i < 5:
-                mask = torch.zeros((H, W, 1), dtype=torch.float32)  # black
+                mask = torch.zeros((H, W, 3), dtype=torch.float32)  # black
             else:
-                mask = torch.ones((H, W, 1), dtype=torch.float32)   # white
+                mask = torch.ones((H, W, 3), dtype=torch.float32)   # white
 
             control_mask.append(mask)
             
