@@ -17,14 +17,6 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 
-def setup(rank, world_size):
-    os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
-    dist.init_process_group("nccl", rank=rank, world_size=world_size)
-
-def cleanup():
-    dist.destroy_process_group()
-
 class VideoDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path):
         self.df = pd.read_csv(csv_path, delimiter=';')
@@ -263,12 +255,16 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
     return None, None
 
 def run_inference(rank, world_size, csv_path):
-    setup(rank, world_size)
+    # Get rank and world_size from environment (set by torchrun)
+    rank = int(os.environ['RANK'])
+    local_rank = int(os.environ['LOCAL_RANK'])
+    world_size = int(os.environ['WORLD_SIZE'])
     
     # Initialize pipeline on each GPU
+    device = f"cuda:{local_rank}"
     pipe = WanVideoPipeline.from_pretrained(
         torch_dtype=torch.bfloat16,
-        device=f"cuda:{rank}",
+        device=device,
         use_usp=True,
         model_configs=[
             ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
@@ -276,21 +272,29 @@ def run_inference(rank, world_size, csv_path):
             ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
         ],
         skip_download=True,
-    ).to(f"cuda:{rank}")
+    ).to(device)
     
     pipe.enable_vram_management()
     
     # Create dataset and distributed sampler
+    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
     dataset = VideoDataset(csv_path)
-    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=False)
+    sampler = DistributedSampler(
+        dataset,
+        num_replicas=world_size,
+        rank=rank,
+        shuffle=False
+    )
+    
     dataloader = torch.utils.data.DataLoader(
         dataset,
         sampler=sampler,
         batch_size=1,
-        num_workers=4,  # Adjust based on your system
-        pin_memory=True
+        num_workers=4,
+        pin_memory=True,
+        persistent_workers=True
     )
-    
+  
     for batch in dataloader:
         idx, video_name, prompt = batch
         idx = idx.item()
@@ -415,8 +419,8 @@ def run_inference(rank, world_size, csv_path):
             if gen:
                 control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
                 control_video = concatenate_videos(control_video_gen, control_video)
-                         
-            # Run inference
+                
+        # Run inference
             video = pipe(
                 prompt=prompt,
                 vace_video=control_video,
@@ -427,25 +431,18 @@ def run_inference(rank, world_size, csv_path):
                 sigma_shift=16.0,
             )
             
-            # Only save on rank 0 to avoid duplicates
-            if rank == 0:
+            # Only save on local_rank 0 to avoid duplicates
+            if local_rank == 0:
                 save_video_frames(video, output_dir)
-    
-    cleanup()
 
 def main():
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
-    world_size = torch.cuda.device_count()
+    # Initialize distributed process group (handled automatically by torchrun)
+    dist.init_process_group(backend="nccl")
     
-    mp.spawn(
-        run_inference,
-        args=(world_size, csv_path),
-        nprocs=world_size,
-        join=True
-    )
+    run_inference()
     
-    # Post-processing (only run on one process)
-    if dist.get_rank() == 0:
+    # Post-processing only on rank 0
+    if int(os.environ['RANK']) == 0:
         concatenate_chunks_to_sequence_output()
 
 if __name__ == "__main__":
