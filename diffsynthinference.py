@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 from PIL import Image
-from diffsynth import save_video, VideoData
-from diffsynth.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
+from diffsynth_highres import save_video, VideoData
+from diffsynth_highres.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
 
 import pandas as pd
 import numpy as np
@@ -178,8 +178,8 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 def concatenate_chunks_to_sequence_output():
-    base_result_dir = Path("results/diffsynth")
-    final_output_dir = Path("results/bedlam_framebyframe_diffsynth")
+    base_result_dir = Path("results/diffsynth_highres")
+    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_highres")
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
@@ -346,7 +346,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
     
     # Process each chunk
     for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
-        output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_highres/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_video = output_dir / "out_video.mp4"
         if output_video.exists():
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
@@ -369,7 +369,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx - 1][0]
-            prev_output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            prev_output_dir = Path(f"results/diffsynth_highres/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
@@ -405,7 +405,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
-        output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_highres/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Copy frames into output_dir/frames/
