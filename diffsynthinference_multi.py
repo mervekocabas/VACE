@@ -255,6 +255,15 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
     return None, None
 
 def run_inference(rank, world_size, csv_path):
+    dist.init_process_group(
+        backend="nccl",
+        init_method='env://',
+        world_size=world_size,
+        rank=rank
+    )
+    local_rank = rank
+    device = f"cuda:{local_rank}"
+    
     # Get rank and world_size from environment (set by torchrun)
     rank = int(os.environ['RANK'])
     local_rank = int(os.environ['LOCAL_RANK'])
@@ -420,7 +429,7 @@ def run_inference(rank, world_size, csv_path):
                 control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
                 control_video = concatenate_videos(control_video_gen, control_video)
                 
-        # Run inference
+            # Run inference
             video = pipe(
                 prompt=prompt,
                 vace_video=control_video,
@@ -434,15 +443,20 @@ def run_inference(rank, world_size, csv_path):
             # Only save on local_rank 0 to avoid duplicates
             if local_rank == 0:
                 save_video_frames(video, output_dir)
+    dist.destroy_process_group()
 
 def main():
-    # Initialize distributed process group (handled automatically by torchrun)
-    dist.init_process_group(backend="nccl")
-    
-    run_inference()
-    
-    # Post-processing only on rank 0
-    if int(os.environ['RANK']) == 0:
+    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
+    world_size = torch.cuda.device_count()
+
+    mp.spawn(
+        run_inference,
+        args=(world_size, csv_path),
+        nprocs=world_size,
+        join=True
+    )
+
+    if torch.distributed.is_initialized() and dist.get_rank() == 0:
         concatenate_chunks_to_sequence_output()
 
 if __name__ == "__main__":
