@@ -440,10 +440,6 @@ def run_inference(csv_path: str):
     dist.destroy_process_group()
 
 def main():
-    # Distributed setup
-    dist.init_process_group(backend="nccl")
-
-    # Argument parsing
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--csv_path",
@@ -455,10 +451,12 @@ def main():
 
     run_inference(args.csv_path)
 
-    # Post-process only on rank 0
     if dist.get_rank() == 0:
         concatenate_chunks_to_sequence_output()
 
+    # Clean shutdown
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 if __name__ == "__main__":
     main()
