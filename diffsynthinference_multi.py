@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 from PIL import Image
-from diffsynth import VideoData
+from diffsynth import save_video, VideoData
 from diffsynth.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
 
 import pandas as pd
@@ -13,24 +13,22 @@ import re
 from typing import List, Tuple
 import imageio.v3 as iio
 
-import torch.distributed as dist
-import torch.multiprocessing as mp
-from torch.utils.data.distributed import DistributedSampler
+from vace.models.utils.preprocessor import VaceVideoProcessor
 
-import argparse
+# 1. Prepare pipeline
+pipe = WanVideoPipeline.from_pretrained(
+    torch_dtype=torch.bfloat16,
+    device="cuda",
+    #redirect_common_files=False,
+    model_configs=[
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
+    ],
+    skip_download = True,
+)
 
-
-class VideoDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_path):
-        self.df = pd.read_csv(csv_path, delimiter=';')
-        
-    def __len__(self):
-        return len(self.df)
-    
-    def __getitem__(self, idx):
-        row = self.df.iloc[idx]
-        return idx, row["file_name"], row["text"]
-
+pipe.enable_vram_management()
 
 vae_stride = (4, 8, 8)
 patch_size = (1, 2, 2)
@@ -128,8 +126,8 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 def concatenate_chunks_to_sequence_output():
-    base_result_dir = Path("results/diffsynth")
-    final_output_dir = Path("results/bedlam_framebyframe_diffsynth")
+    base_result_dir = Path("results/diffsynth_mask")
+    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_mask")
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
@@ -257,203 +255,153 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
         return match.group(1), match.group(2)
     return None, None
 
-def run_inference(csv_path: str):
-    # Get environment info from torchrun
-    local_rank = int(os.environ["LOCAL_RANK"])
-    device = f"cuda:{local_rank}"
+def run_inference(idx: int, video_name: str, prompt: str):
+    gen = 0 
+    # Parse scene_name and seq_number from video_name
+    scene_name, seq_number = parse_video_name(video_name)
+    if not scene_name or not seq_number:
+        print(f"[!] Invalid video name format: {video_name}")
+        return
 
-    # Initialize pipeline on current device
-    pipe = WanVideoPipeline.from_pretrained(
-        torch_dtype=torch.bfloat16,
-        device=device,
-        use_usp=True,
-        model_configs=[
-            ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
-            ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
-            ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
-        ],
-        skip_download=True,
-    ).to(device)
+    # Build path to frame directory
+    frame_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_framebyframe") / scene_name / f"seq_{seq_number.zfill(6)}"
+    
+    if not frame_dir.exists():
+        print(f"[!] Missing frame directory: {frame_dir}")
+        return
 
-    pipe.enable_vram_management()
-    world_size = dist.get_world_size()
-    rank = dist.get_rank()
-    # Dataset setup
-    dataset = VideoDataset(csv_path)
-    sampler = torch.utils.data.distributed.DistributedSampler(
-        dataset,
-        num_replicas=world_size,
-        rank=rank,
-        shuffle=False
-    )
-
-    dataloader = torch.utils.data.DataLoader(
-        dataset,
-        sampler=sampler,
-        batch_size=1,
-        num_workers=7,
-        pin_memory=True,
-        persistent_workers=True
-    )
-  
-    for batch in dataloader:
-        idx, video_name, prompt = batch
-        idx = idx.item()
-        video_name = video_name[0]
-        prompt = prompt[0]
+    # Get all frame files in this sequence
+    frame_files = sorted(frame_dir.glob('frame_*.jpg'))
+    
+    if not frame_files:
+        print(f"[!] No frames found in {frame_dir}")
+        return
         
-        if idx % world_size != rank:
+    print(f"[{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
+
+    # Get height and width from the first frame (0th index)
+    with Image.open(frame_files[0]) as img:
+        width_frame, height_frame = img.size  # PIL returns (width, height)
+
+    # Swap dimensions if portrait mode (height > width)
+    if height_frame > width_frame:
+        height_frame, width_frame = 832, 480  # Portrait resolution
+    else:
+        height_frame, width_frame = 480, 832 # Landscape resolution
+        
+    # Get all chunks at once and store them
+    chunks = get_frame_chunks(frame_files)
+    
+    # Process each chunk
+    for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
+        output_dir = Path(f"results/diffsynth_mask/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_video = output_dir / "out_video.mp4"
+        if output_video.exists():
+            print(f"[✓] Skipping {chunk_name} — output video already exists.")
             continue
         
-        # Your existing processing logic
-        gen = 0 
-        scene_name, seq_number = parse_video_name(video_name)
-        if not scene_name or not seq_number:
-            print(f"[!] Invalid video name format: {video_name}")
-            continue
-
-        frame_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_framebyframe") / scene_name / f"seq_{seq_number.zfill(6)}"
+        chunk_size = len(frame_chunk)
+        print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
         
-        if not frame_dir.exists():
-            print(f"[!] Missing frame directory: {frame_dir}")
-            continue
+        # Create temp directory for this chunk
+        src_frames_dir = output_dir / "src_frames"
+        src_frames_dir.mkdir(parents=True, exist_ok=True)
 
-        frame_files = sorted(frame_dir.glob('frame_*.jpg'))
+        frames_to_replace = 5
+        offset = 5  # Use
+
+        # Check for "plus_X" in chunk name
+        match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
+        if match:
+            offset = int(match.group(1))  # start of padding range
         
-        if not frame_files:
-            print(f"[!] No frames found in {frame_dir}")
-            continue
+        if chunk_idx != 0:
+            prev_chunk_name = chunks[chunk_idx - 1][0]
+            prev_output_dir = Path(f"results/diffsynth_mask/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             
-        print(f"[Rank {rank}] [{idx}] Processing: {video_name} => {len(frame_files)} frames in {frame_dir}")
-
-        with Image.open(frame_files[0]) as img:
-            width_frame, height_frame = img.size
-
-        if height_frame > width_frame:
-            height_frame, width_frame = 832, 480
-        else:
-            height_frame, width_frame = 480, 832
-            
-        chunks = get_frame_chunks(frame_files)
-        
-        for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
-            output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
-            output_video = output_dir / "out_video.mp4"
-            if output_video.exists():
-                print(f"[Rank {rank}] [✓] Skipping {chunk_name} — output video already exists.")
-                continue
-            
-            chunk_size = len(frame_chunk)
-            print(f"  Processing {chunk_name} with {chunk_size} frames (original frames: {len(original_frames)})")
-            
-            # Create temp directory for this chunk
-            src_frames_dir = output_dir / "src_frames"
-            src_frames_dir.mkdir(parents=True, exist_ok=True)
-
-            frames_to_replace = 5
-            offset = 5  # Use
-
-            # Check for "plus_X" in chunk name
-            match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
-            if match:
-                offset = int(match.group(1))  # start of padding range
-            
-            if chunk_idx != 0:
-                prev_chunk_name = chunks[chunk_idx - 1][0]
-                prev_output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            if prev_output_dir.exists():
+                prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
                 
-                if prev_output_dir.exists():
-                    prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
-                    
-                    
-                    if 'plus' in chunk_name: 
-                        # Get the 5 frames before the padding begins
-                        prev_overlap_frames = prev_frames[-(offset + 5):-offset]
-                    else:
-                        # Take last 5 frames of previous chunk
-                        prev_overlap_frames = prev_frames[-5:]
                 
-                    for i, frame_path in enumerate(prev_overlap_frames):
-                        (src_frames_dir/ f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-                    
+                if 'plus' in chunk_name: 
+                    # Get the 5 frames before the padding begins
+                    prev_overlap_frames = prev_frames[-(offset + 5):-offset]
                 else:
-                    print(f"[!] Previous chunk frames not found at {prev_output_dir}")
-                
-                gen_temp_dir = src_frames_dir / "generated_frames"
-                gen_temp_dir.mkdir(exist_ok=True)
-                # Store generated frames in gen_temp_dir
+                    # Take last 5 frames of previous chunk
+                    prev_overlap_frames = prev_frames[-5:]
+              
                 for i, frame_path in enumerate(prev_overlap_frames):
-                    (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                    (src_frames_dir/ f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                 
-                input_temp_dir = src_frames_dir / "input_frames"
-                input_temp_dir.mkdir(exist_ok=True)
-                # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
-                for i, frame_path in enumerate(frame_chunk):
-                    (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-            
-            # Now add the remaining 76 new frames
-            for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
-                (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-            
-            # Create output directory with chunk name
-            output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
-            output_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Copy frames into output_dir/frames/
-            output_frames_dir = output_dir / "frames"
-            output_frames_dir.mkdir(parents=True, exist_ok=True)
-            
-            video_output_path = output_dir / f"src_{chunk_name}.mp4"
-            
-            if 'chunk_0' not in chunk_name:
-                gen = 1
-                
-            if gen:
-                src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
-                video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
-                src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
             else:
-                src_video = frames_to_video(src_frames_dir, video_output_path, fps=16)
-                
-            control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
-            if gen:
-                control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
-                control_video = concatenate_videos(control_video_gen, control_video)
-                
-            # Run inference
-            video = pipe(
-                prompt=prompt,
-                vace_video=control_video,
-                seed=2025, 
-                tiled=True,
-                height=height_frame,
-                width=width_frame,
-                sigma_shift=16.0,
-            )
+                print(f"[!] Previous chunk frames not found at {prev_output_dir}")
             
-            # Only save on local_rank 0 to avoid duplicates
-            save_video_frames(video, output_dir)
-                
-    dist.destroy_process_group()
+            gen_temp_dir = src_frames_dir / "generated_frames"
+            gen_temp_dir.mkdir(exist_ok=True)
+            # Store generated frames in gen_temp_dir
+            for i, frame_path in enumerate(prev_overlap_frames):
+                (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+            
+            input_temp_dir = src_frames_dir / "input_frames"
+            input_temp_dir.mkdir(exist_ok=True)
+            # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
+            for i, frame_path in enumerate(frame_chunk):
+                (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+        
+        # Now add the remaining 76 new frames
+        for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
+            (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+        
+        # Create output directory with chunk name
+        output_dir = Path(f"results/diffsynth_mask/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Copy frames into output_dir/frames/
+        output_frames_dir = output_dir / "frames"
+        output_frames_dir.mkdir(parents=True, exist_ok=True)
+        
+        video_output_path = output_dir / f"src_{chunk_name}.mp4"
+        
+        if 'chunk_0' not in chunk_name:
+            gen = 1
+            
+        if gen:
+            src_video = frames_to_video(input_temp_dir, video_output_path, fps=16)
+            video_output_path_gen = output_dir / f"src_{chunk_name}_gen.mp4"
+            src_video_gen = frames_to_video(gen_temp_dir, video_output_path_gen, fps=16)
+        else:
+            src_video = frames_to_video(src_frames_dir, video_output_path, fps=16)
+            
+        control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--csv_path",
-        type=str,
-        default="./vace_bedlam_100_dataset/final_metadata.csv",
-        help="Path to metadata CSV file"
-    )
-    args = parser.parse_args()
-
-    run_inference(args.csv_path)
-
-    if dist.get_rank() == 0:
-        concatenate_chunks_to_sequence_output()
-
-    # Clean shutdown
-    if dist.is_initialized():
-        dist.destroy_process_group()
-
+        # Default: all input frames (mask=1)
+        control_mask = torch.ones((81, 1, height_frame, width_frame), dtype=torch.uint8)
+        if gen:
+            control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
+            control_video = concatenate_videos(control_video_gen, control_video)
+            control_mask[:5] = 0
+        
+        # 4. Run inference
+        video = pipe(
+            prompt=prompt,
+            vace_video = control_video,
+            vace_video_mask = control_mask,
+            seed=2025, tiled=True,
+            height = height_frame,
+            width = width_frame,
+            sigma_shift = 16.0,
+            negative_prompt = "deformed, disfigured, mutated, bad anatomy, unrealistic body, extra limbs, extra fingers, fused fingers, missing fingers, poorly drawn hands, malformed hands, unnatural pose, distorted face, ugly face, poorly drawn face, blurry face, low detail face, bad eyes, crossed eyes, asymmetrical eyes, low resolution, bad quality, low quality, jpeg artifacts, watermark, signature, text, caption, blurry, grainy, noisy, overexposed, underexposed, bad lighting, duplicated limbs, extra arms, extra legs, broken limb, clone face, lopsided, twisted, unnatural skin texture, skin blemish, unnatural colors, zombie, monster, doll, mannequin, uncanny valley",
+            #sample_solver='unipc',
+        )
+        
+        save_video_frames(video, output_dir)       
+       
 if __name__ == "__main__":
-    main()
+    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
+    df = pd.read_csv(csv_path, delimiter=';')
+
+    for idx, row in df.iterrows():
+        run_inference(idx, row["file_name"], row["text"])
+    
+    # After all inferences are done, run post-processing
+    concatenate_chunks_to_sequence_output()
