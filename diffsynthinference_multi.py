@@ -260,8 +260,6 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
 def run_inference(csv_path: str):
     # Get environment info from torchrun
     local_rank = int(os.environ["LOCAL_RANK"])
-    world_size = dist.get_world_size()
-
     device = f"cuda:{local_rank}"
 
     # Initialize pipeline on current device
@@ -278,6 +276,7 @@ def run_inference(csv_path: str):
     ).to(device)
 
     pipe.enable_vram_management()
+    world_size = dist.get_world_size()
     rank = dist.get_rank()
     # Dataset setup
     dataset = VideoDataset(csv_path)
