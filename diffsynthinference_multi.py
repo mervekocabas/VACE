@@ -399,16 +399,15 @@ def run_inference(idx: int, video_name: str, prompt: str):
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
             
-        H, W = height_frame, width_frame
-        control_mask = []
-
-        for i in range(81):
-            if gen and i < 5:
-                mask = torch.zeros((H, W, 3), dtype=torch.float32)  # black
-            else:
-                mask = torch.ones((H, W, 3), dtype=torch.float32)   # white
-
-            control_mask.append(mask)
+        white_image = Image.new("RGB", (width_frame, height_frame), color=(255, 255, 255))
+        black_image = Image.new("RGB", (width_frame, height_frame), color=(0, 0, 0))
+        # Create a list of 81 such white images
+        
+        if gen: 
+            control_mask = [black_image.copy() for _ in range(5)]
+            control_mask.extend([white_image.copy() for _ in range(76)])
+        else:
+            control_mask = [white_image.copy() for _ in range(81)]
             
         # 4. Run inference
         video = pipe(
