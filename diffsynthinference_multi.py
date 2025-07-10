@@ -139,54 +139,75 @@ def concatenate_chunks_to_sequence_output():
                 continue
 
             output_img_dir = final_output_dir / scene_path.name / seq_path.name / "img"
+            output_src_img_dir = final_output_dir / scene_path.name / seq_path.name / "src_img"
             output_img_dir.mkdir(parents=True, exist_ok=True)
+            output_src_img_dir.mkdir(parents=True, exist_ok=True)
 
             all_frame_files = []
+            all_src_frame_files = []
+
             chunk_dirs = sorted(seq_path.glob("chunk_*"), key=lambda x: int(x.name.split('_')[1]))
             
             for chunk_dir in chunk_dirs:
                 chunk_name = chunk_dir.name
                 frames_dir = chunk_dir / "frames"
-                if not frames_dir.exists():
-                    continue
+                src_frames_dir = chunk_dir / "src_frames"
 
-                frame_files = sorted(frames_dir.glob("frame_*.jpg"))
+                frame_files = sorted(frames_dir.glob("frame_*.jpg")) if frames_dir.exists() else []
+                src_frame_files = sorted(src_frames_dir.glob("frame_*.jpg")) if src_frames_dir.exists() else []
 
                 if chunk_name == "chunk_0":
-                    # keep all frames
                     all_frame_files.extend(frame_files)
+                    all_src_frame_files.extend(src_frame_files)
                 elif "plus" in chunk_name:
-                    # Extract x from plus_x
                     match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
-                    x = int(match.group(1)) if match else 5  # fallback to 5 if no match
+                    x = int(match.group(1)) if match else 5
 
-                    # Remove last 5 frames from previous chunk before adding this chunk's frames
                     if len(all_frame_files) > 0:
                         all_frame_files = all_frame_files[:-5]
+                        all_src_frame_files = all_src_frame_files[:-5]
 
-                    # Skip first x frames of this plus chunk
                     frame_files = frame_files[x+5:]
-                    all_frame_files.extend(frame_files)
-                else:
-                    # Normal chunks except chunk_0: skip first 5 frames
-                    frame_files = frame_files[5:]
-                    all_frame_files.extend(frame_files)
+                    src_frame_files = src_frame_files[x+5:]
 
-            # Symlink or copy into final folder with continuous frame numbering
+                    all_frame_files.extend(frame_files)
+                    all_src_frame_files.extend(src_frame_files)
+                else:
+                    frame_files = frame_files[5:]
+                    src_frame_files = src_frame_files[5:]
+
+                    all_frame_files.extend(frame_files)
+                    all_src_frame_files.extend(src_frame_files)
+
+            # Save target (output) frames
             for i, frame_path in enumerate(all_frame_files):
                 target_path = output_img_dir / f"frame_{i:06d}.jpg"
                 if not target_path.exists():
                     try:
                         target_path.symlink_to(frame_path.resolve())
                     except FileExistsError:
-                        pass  # Skip if symlink already exists
+                        pass
 
-            print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
-            
-            # Also save video from these frames
+            # Save source frames
+            for i, src_path in enumerate(all_src_frame_files):
+                target_src_path = output_src_img_dir / f"frame_{i:06d}.jpg"
+                if not target_src_path.exists():
+                    try:
+                        target_src_path.symlink_to(src_path.resolve())
+                    except FileExistsError:
+                        pass
+
+            print(f"[✓] Combined {len(all_frame_files)} output frames → {output_img_dir}")
+            print(f"[✓] Combined {len(all_src_frame_files)} source frames → {output_src_img_dir}")
+
+            # Save videos
             final_video_path = final_output_dir / scene_path.name / seq_path.name / "out_video.mp4"
+            final_src_video_path = final_output_dir / scene_path.name / seq_path.name / "src_video.mp4"
             frames_to_video(output_img_dir, final_video_path, fps=16)
-            print(f"[✓] Saved combined video → {final_video_path}")
+            frames_to_video(output_src_img_dir, final_src_video_path, fps=16)
+
+            print(f"[✓] Saved output video → {final_video_path}")
+            print(f"[✓] Saved source video → {final_src_video_path}")
 
 def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[str, List[Path], List[int]]]:
     """
