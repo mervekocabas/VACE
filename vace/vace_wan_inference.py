@@ -355,7 +355,7 @@ def main(args):
     #video_path = os.path.join(bdir, "deneme.mp4")
     #save_video(video_np, video_path)
     bdir = os.path.join('results', args.model_name, time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time())))
-    import ipdb; ipdb.set_trace()
+
     logging.info(f"Generating video...")
     video = wan_vace.generate(
         args.prompt,
