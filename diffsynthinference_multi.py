@@ -291,7 +291,7 @@ def run_inference(csv_path: str):
         dataset,
         sampler=sampler,
         batch_size=1,
-        num_workers=4,
+        num_workers=7,
         pin_memory=True,
         persistent_workers=True
     )
