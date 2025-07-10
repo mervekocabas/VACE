@@ -338,10 +338,8 @@ class WanVace(WanT2V):
             context_null = [t.to(self.device) for t in context_null]
 
         # vace context encode
-        import ipdb; ipdb.set_trace()
         z0 = self.vace_encode_frames(input_frames, input_ref_images, masks=input_masks)
         m0 = self.vace_encode_masks(input_masks, input_ref_images)
-        import ipdb; ipdb.set_trace()
         z = self.vace_latent(z0, m0)
 
         target_shape = list(z0[0].shape)
