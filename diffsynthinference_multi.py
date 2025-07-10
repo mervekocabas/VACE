@@ -378,23 +378,22 @@ def run_inference(idx: int, video_name: str, prompt: str):
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
             
-        # Default: all input frames (mask=1)
-        H, W = control_video[0].size[1], control_video[0].size[0]  # (H, W)
-        mask_frames = []
+        H, W = height_frame, width_frame
+        control_mask = []
 
-        for i in range(len(control_video)):
+        for i in range(81):
             if gen and i < 5:
-                mask = np.zeros((1, H, W), dtype=np.uint8)  # black
+                mask = torch.zeros((H, W, 1), dtype=torch.float32)  # black
             else:
-                mask = np.ones((1, H, W), dtype=np.uint8) * 255  # white
-            mask = mask.unsqueeze(-1) 
-            mask_frames.append(Image.fromarray(mask))
+                mask = torch.ones((H, W, 1), dtype=torch.float32)   # white
 
+            control_mask.append(mask)
+            
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video = control_video,
-            vace_video_mask = mask_frames,
+            vace_video_mask = control_mask,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
