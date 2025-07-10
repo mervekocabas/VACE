@@ -384,9 +384,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
         for i in range(len(control_video)):
             if gen and i < 5:
-                mask = np.zeros((H, W), dtype=np.uint8)  # black
+                mask = np.zeros((1, H, W), dtype=np.uint8)  # black
             else:
-                mask = np.ones((H, W), dtype=np.uint8) * 255  # white
+                mask = np.ones((1, H, W), dtype=np.uint8) * 255  # white
             mask_frames.append(Image.fromarray(mask))
 
         # 4. Run inference
