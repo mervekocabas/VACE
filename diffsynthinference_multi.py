@@ -15,6 +15,8 @@ import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
 
+import argparse
+
 # 1. Prepare pipeline
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
@@ -126,8 +128,8 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 def concatenate_chunks_to_sequence_output():
-    base_result_dir = Path("results/diffsynth")
-    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_deneme")
+    base_result_dir = Path("results/diffsynth_finvers")
+    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_finvers")
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
@@ -315,7 +317,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
     
     # Process each chunk
     for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
-        output_dir = Path(f"results/diffsynth_mask/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_finvers/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_video = output_dir / "out_video.mp4"
         if output_video.exists():
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
@@ -338,7 +340,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx - 1][0]
-            prev_output_dir = Path(f"results/diffsynth_mask/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            prev_output_dir = Path(f"results/diffsynth_finvers/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
@@ -374,7 +376,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
-        output_dir = Path(f"results/diffsynth_mask/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_finvers/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Copy frames into output_dir/frames/
@@ -425,11 +427,17 @@ def run_inference(idx: int, video_name: str, prompt: str):
         save_video_frames(video, output_dir)       
        
 if __name__ == "__main__":
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
-    df = pd.read_csv(csv_path, delimiter=';')
+    parser = argparse.ArgumentParser(description="Run inference from a metadata CSV file.")
+    parser.add_argument("--csv_path", type=str, default="./vace_bedlam_100_dataset/final_metadata.csv", help="Path to the input CSV file")
+    
+    args = parser.parse_args()
+    
+    df = pd.read_csv(args.csv_path, delimiter=';')
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"], row["text"])
 
     # After all inferences are done, run post-processing
     concatenate_chunks_to_sequence_output()
+    
+   
