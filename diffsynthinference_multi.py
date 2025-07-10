@@ -17,6 +17,9 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 
+import argparse
+
+
 class VideoDataset(torch.utils.data.Dataset):
     def __init__(self, csv_path):
         self.df = pd.read_csv(csv_path, delimiter=';')
@@ -254,23 +257,15 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
         return match.group(1), match.group(2)
     return None, None
 
-def run_inference(rank, world_size, csv_path):
-    dist.init_process_group(
-        backend="nccl",
-        init_method='env://',
-        world_size=world_size,
-        rank=rank
-    )
-    local_rank = rank
+def run_inference(csv_path: str):
+    # Get environment info from torchrun
+    rank = dist.get_rank()
+    local_rank = int(os.environ["LOCAL_RANK"])
+    world_size = dist.get_world_size()
+
     device = f"cuda:{local_rank}"
-    
-    # Get rank and world_size from environment (set by torchrun)
-    rank = int(os.environ['RANK'])
-    local_rank = int(os.environ['LOCAL_RANK'])
-    world_size = int(os.environ['WORLD_SIZE'])
-    
-    # Initialize pipeline on each GPU
-    device = f"cuda:{local_rank}"
+
+    # Initialize pipeline on current device
     pipe = WanVideoPipeline.from_pretrained(
         torch_dtype=torch.bfloat16,
         device=device,
@@ -282,19 +277,18 @@ def run_inference(rank, world_size, csv_path):
         ],
         skip_download=True,
     ).to(device)
-    
+
     pipe.enable_vram_management()
-    
-    # Create dataset and distributed sampler
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
+
+    # Dataset setup
     dataset = VideoDataset(csv_path)
-    sampler = DistributedSampler(
+    sampler = torch.utils.data.distributed.DistributedSampler(
         dataset,
         num_replicas=world_size,
         rank=rank,
         shuffle=False
     )
-    
+
     dataloader = torch.utils.data.DataLoader(
         dataset,
         sampler=sampler,
@@ -446,18 +440,25 @@ def run_inference(rank, world_size, csv_path):
     dist.destroy_process_group()
 
 def main():
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
-    world_size = torch.cuda.device_count()
+    # Distributed setup
+    dist.init_process_group(backend="nccl")
 
-    mp.spawn(
-        run_inference,
-        args=(world_size, csv_path),
-        nprocs=world_size,
-        join=True
+    # Argument parsing
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--csv_path",
+        type=str,
+        default="./vace_bedlam_100_dataset/final_metadata.csv",
+        help="Path to metadata CSV file"
     )
+    args = parser.parse_args()
 
-    if torch.distributed.is_initialized() and dist.get_rank() == 0:
+    run_inference(args.csv_path)
+
+    # Post-process only on rank 0
+    if dist.get_rank() == 0:
         concatenate_chunks_to_sequence_output()
+
 
 if __name__ == "__main__":
     main()
