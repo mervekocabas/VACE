@@ -375,12 +375,12 @@ def run_inference(idx: int, video_name: str, prompt: str):
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
 
         # Default: all input frames (mask=1)
-        control_mask = torch.ones((81, 1, width_frame, height_frame), dtype=torch.uint8)
+        control_mask = torch.ones((81, 3, width_frame, height_frame), dtype=torch.uint8)
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
             control_mask[:5] = 0
-        
+        import ipdb; ipdb.set_trace()
         # 4. Run inference
         video = pipe(
             prompt=prompt,
