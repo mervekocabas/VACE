@@ -432,8 +432,8 @@ def run_inference(csv_path: str):
             )
             
             # Only save on local_rank 0 to avoid duplicates
-            if local_rank == 0:
-                save_video_frames(video, output_dir)
+            save_video_frames(video, output_dir)
+                
     dist.destroy_process_group()
 
 def main():
