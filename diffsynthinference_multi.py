@@ -387,6 +387,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
                 mask = np.zeros((1, H, W), dtype=np.uint8)  # black
             else:
                 mask = np.ones((1, H, W), dtype=np.uint8) * 255  # white
+            mask = mask.unsqueeze(-1) 
             mask_frames.append(Image.fromarray(mask))
 
         # 4. Run inference
