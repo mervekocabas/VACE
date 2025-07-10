@@ -259,7 +259,6 @@ def parse_video_name(video_name: str) -> Tuple[str, str]:
 
 def run_inference(csv_path: str):
     # Get environment info from torchrun
-    rank = dist.get_rank()
     local_rank = int(os.environ["LOCAL_RANK"])
     world_size = dist.get_world_size()
 
@@ -279,7 +278,7 @@ def run_inference(csv_path: str):
     ).to(device)
 
     pipe.enable_vram_management()
-
+    rank = dist.get_rank()
     # Dataset setup
     dataset = VideoDataset(csv_path)
     sampler = torch.utils.data.distributed.DistributedSampler(
