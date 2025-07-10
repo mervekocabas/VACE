@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 from PIL import Image
-from diffsynth_highres import save_video, VideoData
-from diffsynth_highres.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
+from diffsynth import save_video, VideoData
+from diffsynth.pipelines.wan_video_new import WanVideoPipeline, ModelConfig
 
 import pandas as pd
 import numpy as np
