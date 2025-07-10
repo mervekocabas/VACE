@@ -54,51 +54,11 @@ SIZE_CONFIGS = {
     '480p': (480, 832)
 }
 
-vid_proc = VaceVideoProcessor(downsample=tuple([x * y for x, y in zip(vae_stride, patch_size)]),
-            min_area=480 * 832,
-            max_area=480 * 832,
-            min_fps=16,
-            max_fps=16,
-            zero_start=True,
-            seq_len=32760,
-            keep_last=True)
-
 def concatenate_videos(video_a, video_b):
     frames_a = [video_a[i] for i in range(len(video_a))]
     frames_b = [video_b[i] for i in range(len(video_b))]
     return frames_a + frames_b
 
-def prepare_source(src_video, src_mask, num_frames, image_size, device):
-        area = image_size[0] * image_size[1]
-        vid_proc.set_area(area)
-        if area == 720*1280:
-            vid_proc.set_seq_len(75600)
-        elif area == 480*832:
-            vid_proc.set_seq_len(32760)
-        else:
-            raise NotImplementedError(f'image_size {image_size} is not supported')
-
-        image_size = (image_size[1], image_size[0])
-        image_sizes = []
-        for i, (sub_src_video, sub_src_mask) in enumerate(zip(src_video, src_mask)):
-            if sub_src_mask is not None and sub_src_video is not None:
-                src_video[i], src_mask[i], _, _, _ = vid_proc.load_video_pair(sub_src_video, sub_src_mask)
-                src_video[i] = src_video[i].to(device)
-                src_mask[i] = src_mask[i].to(device)
-                src_mask[i] = torch.clamp((src_mask[i][:1, :, :, :] + 1) / 2, min=0, max=1)
-                image_sizes.append(src_video[i].shape[2:])
-            elif sub_src_video is None:
-                src_video[i] = torch.zeros((3, num_frames, image_size[0], image_size[1]), device=device)
-                src_mask[i] = torch.ones_like(src_video[i], device=device)
-                image_sizes.append(image_size)
-            else:
-                src_video[i], _, _, _ = vid_proc.load_video(sub_src_video)
-                src_video[i] = src_video[i].to(device)
-                src_mask[i] = torch.ones_like(src_video[i], device=device)
-                image_sizes.append(src_video[i].shape[2:])
-
-        return src_video, src_mask
-    
 def save_video_frames(video_frames, output_dir):
     frame_dir = os.path.join(output_dir, "frames")
     os.makedirs(frame_dir, exist_ok=True)
@@ -337,9 +297,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
     # Swap dimensions if portrait mode (height > width)
     if height_frame > width_frame:
-        height_frame, width_frame = 1280, 720  # Portrait resolution
+        height_frame, width_frame = 832, 480  # Portrait resolution
     else:
-        height_frame, width_frame = 720, 1280 # Landscape resolution
+        height_frame, width_frame = 480, 832 # Landscape resolution
         
     # Get all chunks at once and store them
     chunks = get_frame_chunks(frame_files)
