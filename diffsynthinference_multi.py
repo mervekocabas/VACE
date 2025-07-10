@@ -373,19 +373,27 @@ def run_inference(idx: int, video_name: str, prompt: str):
             src_video = frames_to_video(src_frames_dir, video_output_path, fps=16)
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
-
-        # Default: all input frames (mask=1)
-        control_mask = torch.ones((81, 3, width_frame, height_frame), dtype=torch.uint8)
+            
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
-            control_mask[:5] = 0
-        import ipdb; ipdb.set_trace()
+            
+        # Default: all input frames (mask=1)
+        H, W = control_video[0].size[1], control_video[0].size[0]  # (H, W)
+        mask_frames = []
+
+        for i in range(len(control_video)):
+            if gen and i < 5:
+                mask = np.zeros((H, W), dtype=np.uint8)  # black
+            else:
+                mask = np.ones((H, W), dtype=np.uint8) * 255  # white
+            mask_frames.append(Image.fromarray(mask))
+
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video = control_video,
-            vace_video_mask = control_mask,
+            vace_video_mask = mask_frames,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
