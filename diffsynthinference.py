@@ -337,9 +337,9 @@ def run_inference(idx: int, video_name: str, prompt: str):
 
     # Swap dimensions if portrait mode (height > width)
     if height_frame > width_frame:
-        height_frame, width_frame = 832, 480  # Portrait resolution
+        height_frame, width_frame = 1280, 720  # Portrait resolution
     else:
-        height_frame, width_frame = 480, 832  # Landscape resolution
+        height_frame, width_frame = 720, 1280 # Landscape resolution
         
     # Get all chunks at once and store them
     chunks = get_frame_chunks(frame_files)
