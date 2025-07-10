@@ -376,21 +376,21 @@ def run_inference(csv_path: str):
                 
                     for i, frame_path in enumerate(prev_overlap_frames):
                         (src_frames_dir/ f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                        
+                    gen_temp_dir = src_frames_dir / "generated_frames"
+                    gen_temp_dir.mkdir(exist_ok=True)
+                    # Store generated frames in gen_temp_dir
+                    for i, frame_path in enumerate(prev_overlap_frames):
+                        (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
+                    
+                    input_temp_dir = src_frames_dir / "input_frames"
+                    input_temp_dir.mkdir(exist_ok=True)
+                    # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
+                    for i, frame_path in enumerate(frame_chunk):
+                        (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
                     
                 else:
                     print(f"[!] Previous chunk frames not found at {prev_output_dir}")
-                
-                gen_temp_dir = src_frames_dir / "generated_frames"
-                gen_temp_dir.mkdir(exist_ok=True)
-                # Store generated frames in gen_temp_dir
-                for i, frame_path in enumerate(prev_overlap_frames):
-                    (gen_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
-                
-                input_temp_dir = src_frames_dir / "input_frames"
-                input_temp_dir.mkdir(exist_ok=True)
-                # Store input frames in input_temp_dir (skipping first 5 overlapping frames)
-                for i, frame_path in enumerate(frame_chunk):
-                    (input_temp_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
             
             # Now add the remaining 76 new frames
             for i, frame_path in enumerate(frame_chunk, start=5 if chunk_idx != 0 else 0):
