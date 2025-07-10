@@ -414,7 +414,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         video_output_path = output_dir / f"src_{chunk_name}.mp4"
         
-        if '0' not in chunk_name:
+        if 'chunk_0' not in chunk_name:
             gen = 1
             
         if gen:
