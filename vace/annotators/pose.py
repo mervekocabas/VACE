@@ -81,8 +81,6 @@ class PoseAnnotator:
 
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
-                                        
-            self.save_to_csv(pose, W, H, frame_id, input_filename)
             
             ret_data = {}
             if self.use_body:
@@ -115,13 +113,17 @@ class PoseAnnotator:
                 det_result[..., ::2] *= h_ratio
                 det_result[..., 1::2] *= w_ratio
                 det_result = det_result.astype(np.int32)
+                
+            self.save_to_csv(pose, w_ratio, h_ratio, frame_id, input_filename, self.use_hand)
             
             return ret_data, det_result
         
-    def save_to_csv(self, pose, W, H, frame_id, input_filename=None):
+    def save_to_csv(self, pose, W, H, frame_id, input_filename=None, use_hand=False):
         # Get the body data from the pose dictionary
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         face = pose['faces']
+        if use_hand:
+            hands = pose['hands']
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
         
         # Create data for DataFrame
@@ -130,6 +132,9 @@ class PoseAnnotator:
         num_keypoints = subset.shape[1]  # from subset shape
         num_facepoints = face.shape[1]
         num_facepeople = face.shape[0]
+        if use_hand:
+            num_handpoints = hands.shape[1]
+            num_handpeople = hands.shape[0]
         
         for person_id in range(num_people):
             for keypoint_id in range(num_keypoints):
@@ -142,10 +147,23 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number (0-3)
                     keypoint_id,  # keypoint number (0-17)
-                    x,  # keypoint x
-                    y,  # keypoint y
+                    x * W,  # keypoint x
+                    y * H,  # keypoint y
                     subset_val,  # subset value
                 ])
+        
+        if use_hand:   
+            for person_id in range(num_handpeople):
+                for keypoint_id in range(num_handpoints):
+                    # Get x,y coordinates for this person's keypoint
+                    hand_x, hand_y = hands[person_id][keypoint_id]
+                    data.append([
+                        frame_id,  # frame number
+                        person_id,  # body number 
+                        keypoint_id,  
+                        hand_x * W, #keypoint face x
+                        hand_y * H, #keypoint face y
+                    ])
 
         for person_id in range(num_facepeople):
             for keypoint_id in range(num_facepoints):
@@ -155,15 +173,15 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number 
                     keypoint_id,  
-                    face_x, #keypoint face x
-                    face_y, #keypoint face y
+                    face_x * W, #keypoint face x
+                    face_y * H, #keypoint face y
                 ])
                 
         # Create DataFrame
         df = pd.DataFrame(data, columns=['frame_id', 'body_id', 'keypoint_id', 'x', 'y', 'subset'])
         
         # Save to CSV
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data')
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data_diffsynth')
         os.makedirs(output_dir, exist_ok=True)
         # Create filename with input filename if provided
         if input_filename:
