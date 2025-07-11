@@ -124,7 +124,6 @@ class PoseAnnotator:
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         face = pose['faces']
         if use_hand:
-            import ipdb; ipdb.set_trace()
             hands = pose['hands']
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
         
@@ -155,16 +154,23 @@ class PoseAnnotator:
                 ])
         
         if use_hand:   
+            # Each person has 2 hands: left and right
+            num_handpeople = hands.shape[0] // 2
+            num_handpoints = hands.shape[1]
+
             for person_id in range(num_handpeople):
-                for keypoint_id in range(num_handpoints):
-                    # Get x,y coordinates for this person's keypoint
-                    hand_x, hand_y = hands[person_id][keypoint_id]
+                left_hand = hands[2 * person_id]
+                right_hand = hands[2 * person_id + 1]
+
+                # Concatenate both hands into 42 keypoints
+                full_hand = np.vstack([left_hand, right_hand])  # shape: (42, 2)
+                for keypoint_id, (x, y) in enumerate(full_hand):
                     data.append([
-                        frame_id,  # frame number
-                        person_id,  # body number 
-                        keypoint_id,  
-                        hand_x, #keypoint face x
-                        hand_y, #keypoint face y
+                        frame_id,        # frame number
+                        person_id,       # body_id
+                        keypoint_id,     # keypoint number (0–41)
+                        x,
+                        y,
                     ])
 
         for person_id in range(num_facepeople):
