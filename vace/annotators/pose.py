@@ -200,7 +200,7 @@ class PoseAnnotator:
 class PoseBodyFaceAnnotator(PoseAnnotator):
     def __init__(self, cfg, device=None):
         super().__init__(cfg, device)
-        self.use_body, self.use_face, self.use_hand = True, True, False
+        self.use_body, self.use_face, self.use_hand = True, True, True
     @torch.no_grad()
     @torch.inference_mode
     def forward(self, image, frame_id=0, input_filename=None):
