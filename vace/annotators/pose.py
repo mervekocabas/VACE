@@ -82,7 +82,7 @@ class PoseAnnotator:
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
                                         
-            self.save_to_csv(pose, W, H, frame_id, input_filename)
+            self.save_to_csv(pose, W, H, ori_h, ori_w, frame_id, input_filename)
             
             ret_data = {}
             if self.use_body:
@@ -118,11 +118,14 @@ class PoseAnnotator:
             
             return ret_data, det_result
         
-    def save_to_csv(self, pose, W, H, frame_id, input_filename=None):
+    def save_to_csv(self, pose, W, H, ori_h, ori_w, frame_id, input_filename=None):
         # Get the body data from the pose dictionary
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         face = pose['faces']
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
+        
+        scale_x = W / ori_w
+        scale_y = H / ori_h
         
         # Create data for DataFrame
         data = []
@@ -142,8 +145,8 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number (0-3)
                     keypoint_id,  # keypoint number (0-17)
-                    x,  # keypoint x
-                    y,  # keypoint y
+                    x * scale_x,  # keypoint x
+                    y * scale_y,  # keypoint y
                     subset_val,  # subset value
                 ])
 
@@ -155,8 +158,8 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number 
                     keypoint_id,  
-                    face_x, #keypoint face x
-                    face_y, #keypoint face y
+                    face_x * scale_x, #keypoint face x
+                    face_y * scale_y, #keypoint face y
                 ])
                 
         # Create DataFrame
