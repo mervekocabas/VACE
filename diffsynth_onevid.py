@@ -13,6 +13,33 @@ import re
 from typing import List, Tuple
 import imageio.v3 as iio
 
+# 1. Prepare pipeline
+pipe = WanVideoPipeline.from_pretrained(
+    torch_dtype=torch.bfloat16,
+    device="cuda",
+    #redirect_common_files=False,
+    model_configs=[
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="diffusion_pytorch_model*.safetensors", offload_device="cpu"),
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="models_t5_umt5-xxl-enc-bf16.pth", offload_device="cpu"),
+        ModelConfig(model_id="Wan-AI/Wan2.1-VACE-14B", origin_file_pattern="Wan2.1_VAE.pth", offload_device="cpu"),
+    ],
+    skip_download = True,
+)
+
+pipe.enable_vram_management()
+
+vae_stride = (4, 8, 8)
+patch_size = (1, 2, 2)
+SIZE_CONFIGS = {
+    '720*1280': (720, 1280),
+    '1280*720': (1280, 720),
+    '480*832': (480, 832),
+    '832*480': (832, 480),
+    '1024*1024': (1024, 1024),
+    '720p': (1280, 720),
+    '480p': (480, 832)
+}
+
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
     if not frame_paths:
