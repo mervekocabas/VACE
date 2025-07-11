@@ -31,4 +31,7 @@ if __name__ == "__main__":
     df = pd.read_csv(csv_path, delimiter=';')
 
     for idx, row in df.iterrows():
-        run_inference(idx, row["file_name"])
+        file_name = row["file_name"]  # e.g., '20221020_3-8_250_xyz_seq_000170.mp4'
+        base_name = Path(file_name).stem  # Removes .mp4 → '20221020_3-8_250_xyz_seq_000170'
+        new_name = base_name + "_out_video.mp4"
+        run_inference(idx, new_name)
