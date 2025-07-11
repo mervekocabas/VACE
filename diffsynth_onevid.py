@@ -38,7 +38,7 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 # Path to the src_frames directory
-src_frames_dir = Path("results/diffsynth_finvers/20221010_3_1000_batch01hand/seq_000166/chunk_1_plus_35/src_frames")
+src_frames_dir = Path("results/diffsynth_finvers/20221010_3_1000_batch01hand/seq_000166/chunk_1_plus_35/src_frames/ye")
 
 # Get all frame paths
 frame_files = sorted(src_frames_dir.glob("frame_*.jpg"))
