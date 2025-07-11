@@ -145,8 +145,8 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number (0-3)
                     keypoint_id,  # keypoint number (0-17)
-                    x * scale_x,  # keypoint x
-                    y * scale_y,  # keypoint y
+                    x / scale_x,  # keypoint x
+                    y / scale_y,  # keypoint y
                     subset_val,  # subset value
                 ])
 
@@ -158,8 +158,8 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number 
                     keypoint_id,  
-                    face_x * scale_x, #keypoint face x
-                    face_y * scale_y, #keypoint face y
+                    face_x / scale_x, #keypoint face x
+                    face_y / scale_y, #keypoint face y
                 ])
                 
         # Create DataFrame
