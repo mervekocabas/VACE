@@ -5,7 +5,7 @@ import os
 
 def run_inference(idx, file_name):
     #video_dir = Path("./results/vace-14B-v2prompt-face-body-videos")
-    video_dir = Path("./results/bedlam_100_videos_face_hand_vids_dwpose_30fps_one_directory")
+    video_dir = Path("./results/seedvr_output")
     
     src_video = video_dir / file_name
 
