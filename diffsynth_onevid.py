@@ -1,6 +1,41 @@
 from pathlib import Path
 from PIL import Image
 
+def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
+    frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
+    if not frame_paths:
+        print(f"[!] No frames found in {frame_dir}")
+        return
+
+    frames = []
+    for frame_path in frame_paths:
+        img = cv2.imread(str(frame_path))
+        if img is None:
+            print(f"[!] Failed to read: {frame_path}")
+            continue
+        # Convert BGR (OpenCV) to RGB for imageio
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        frames.append(img_rgb)
+
+    if not frames:
+        print("[!] No valid frames to write.")
+        return
+
+    output_video_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with iio.imopen(output_video_path, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=fps)
+        writer._video_stream.options = {"crf": str(crf)}
+        for frame in frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
+            
+    video_np = np.stack(frames)  # Shape: (num_frames, H, W, C)
+    video_np = np.transpose(video_np, (0, 3, 1, 2))  # Now: (num_frames, C, H, W)
+
+    # Convert to torch tensor (optional)
+    video_tensor = torch.from_numpy(video_np).float()
+    return video_tensor
+
 # Path to the src_frames directory
 src_frames_dir = Path("results/diffsynth_finvers/20221010_3_1000_batch01hand/seq_000166/chunk_1_plus_35/src_frames")
 
@@ -22,7 +57,6 @@ else:
 
 # Convert frames to video
 output_video_path = Path("tmp_input_video.mp4")
-from your_script import frames_to_video  # If this is saved in a script
 video_tensor = frames_to_video(src_frames_dir, output_video_path, fps=16)
 
 # Wrap in VideoData
