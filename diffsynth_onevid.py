@@ -75,6 +75,24 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     video_tensor = torch.from_numpy(video_np).float()
     return video_tensor
 
+def save_video_frames(video_frames, output_dir):
+    frame_dir = os.path.join(output_dir, "frames")
+    os.makedirs(frame_dir, exist_ok=True)
+
+    for idx, frame in enumerate(video_frames):
+        filename = f"frame_{idx:06d}.jpg"
+        path = os.path.join(frame_dir, filename)
+        frame.save(path)
+
+    print(f"Saved {len(video_frames)} frames to {frame_dir}")
+    
+    video_dir = os.path.join(output_dir, "out_video.mp4")
+    with iio.imopen(video_dir, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=16)
+        writer._video_stream.options = {"crf": str(23)}
+        for frame in video_frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
+            
 # Path to the src_frames directory
 src_frames_dir = Path("results/diffsynth_finvers/20221010_3_1000_batch01hand/seq_000166/chunk_1_plus_35/src_frames/ye")
 
