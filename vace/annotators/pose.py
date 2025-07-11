@@ -92,19 +92,19 @@ class PoseAnnotator:
                                                interpolation=cv2.INTER_LANCZOS4 if ori_h * ori_w > H * W else cv2.INTER_AREA)
                 ret_data["detected_map_body"] = detected_map_body
 
-            if self.use_face:
+            elif self.use_face:
                 detected_map_face = draw_pose(pose, H, W, use_face=True)
                 detected_map_face = cv2.resize(detected_map_face[..., ::-1], (ori_w, ori_h),
                                                interpolation=cv2.INTER_LANCZOS4 if ori_h * ori_w > H * W else cv2.INTER_AREA)
                 ret_data["detected_map_face"] = detected_map_face
 
-            if self.use_body and self.use_face:
+            elif self.use_body and self.use_face:
                 detected_map_bodyface = draw_pose(pose, H, W, use_body=True, use_face=True)
                 detected_map_bodyface = cv2.resize(detected_map_bodyface[..., ::-1], (ori_w, ori_h),
                                                    interpolation=cv2.INTER_LANCZOS4 if ori_h * ori_w > H * W else cv2.INTER_AREA)
                 ret_data["detected_map_bodyface"] = detected_map_bodyface
 
-            if self.use_hand and self.use_body and self.use_face:
+            elif self.use_hand and self.use_body and self.use_face:
                 detected_map_handbodyface = draw_pose(pose, H, W, use_hand=True, use_body=True, use_face=True)
                 detected_map_handbodyface = cv2.resize(detected_map_handbodyface[..., ::-1], (ori_w, ori_h),
                                                        interpolation=cv2.INTER_LANCZOS4 if ori_h * ori_w > H * W else cv2.INTER_AREA)
