@@ -21,7 +21,6 @@ def draw_pose(pose, H, W, use_hand=False, use_body=False, use_face=False):
     candidate = bodies['candidate']
     subset = bodies['subset']
     canvas = np.zeros(shape=(H, W, 3), dtype=np.uint8)
-    import ipdb; ipdb.set_trace()
     if use_body:
         canvas = util.draw_bodypose(canvas, candidate, subset)
     if use_hand:
