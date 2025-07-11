@@ -1,5 +1,6 @@
 from pathlib import Path
 from PIL import Image
+import cv2
 
 def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
