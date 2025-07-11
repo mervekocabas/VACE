@@ -114,7 +114,7 @@ class PoseAnnotator:
                 det_result[..., 1::2] *= w_ratio
                 det_result = det_result.astype(np.int32)
                 
-            self.save_to_csv(pose, w_ratio, h_ratio, frame_id, input_filename, self.use_hand)
+            self.save_to_csv(pose, float(W), float(H), frame_id, input_filename, self.use_hand)
             
             return ret_data, det_result
         
