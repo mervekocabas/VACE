@@ -82,6 +82,9 @@ class PoseAnnotator:
             bodies = dict(candidate=body, subset=score)
             pose = dict(bodies=bodies, hands=hands, faces=faces)
             
+            self.save_to_csv(pose, float(W), float(H), frame_id, input_filename, self.use_hand)
+            
+            
             ret_data = {}
             if self.use_body:
                 detected_map_body = draw_pose(pose, H, W, use_body=True)
@@ -113,8 +116,6 @@ class PoseAnnotator:
                 det_result[..., ::2] *= h_ratio
                 det_result[..., 1::2] *= w_ratio
                 det_result = det_result.astype(np.int32)
-                
-            self.save_to_csv(pose, float(W), float(H), frame_id, input_filename, self.use_hand)
             
             return ret_data, det_result
         
@@ -147,8 +148,8 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number (0-3)
                     keypoint_id,  # keypoint number (0-17)
-                    x * W,  # keypoint x
-                    y * H,  # keypoint y
+                    x,  # keypoint x
+                    y,  # keypoint y
                     subset_val,  # subset value
                 ])
         
@@ -161,8 +162,8 @@ class PoseAnnotator:
                         frame_id,  # frame number
                         person_id,  # body number 
                         keypoint_id,  
-                        hand_x * W, #keypoint face x
-                        hand_y * H, #keypoint face y
+                        hand_x, #keypoint face x
+                        hand_y, #keypoint face y
                     ])
 
         for person_id in range(num_facepeople):
@@ -173,8 +174,8 @@ class PoseAnnotator:
                     frame_id,  # frame number
                     person_id,  # body number 
                     keypoint_id,  
-                    face_x * W, #keypoint face x
-                    face_y * H, #keypoint face y
+                    face_x, #keypoint face x
+                    face_y, #keypoint face y
                 ])
                 
         # Create DataFrame
