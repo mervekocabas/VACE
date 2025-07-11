@@ -242,6 +242,7 @@ class PoseBodyAnnotator(PoseAnnotator):
 
 class PoseBodyVideoAnnotator(PoseBodyAnnotator):
     def forward(self, frames, input_filename):
+        self.use_body, self.use_face, self.use_hand = True, True, True
         ret_frames = []
         for frame_id, frame in enumerate(frames):
             anno_frame = super().forward(np.array(frame), frame_id, input_filename)
