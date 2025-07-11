@@ -168,7 +168,7 @@ class PoseAnnotator:
                     data.append([
                         frame_id,        # frame number
                         person_id,       # body_id
-                        keypoint_id,     # keypoint number (0–41)
+                        keypoint_id + 95,     # keypoint number (0–41)
                         x,
                         y,
                     ])
@@ -180,7 +180,7 @@ class PoseAnnotator:
                 data.append([
                     frame_id,  # frame number
                     person_id,  # body number 
-                    keypoint_id,  
+                    keypoint_id + 137,  
                     face_x, #keypoint face x
                     face_y, #keypoint face y
                 ])
