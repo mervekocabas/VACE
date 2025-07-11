@@ -124,6 +124,7 @@ class PoseAnnotator:
         body = pose['bodies']['candidate']  # shape: (72, 2) - 4 people * 18 keypoints
         face = pose['faces']
         if use_hand:
+            import ipdb; ipdb.set_trace()
             hands = pose['hands']
         subset = pose['bodies']['subset']   # shape: (4, 18) - 4 people, 18 keypoints each
         
