@@ -397,6 +397,3 @@ if __name__ == "__main__":
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"], row["text"])
-    
-    # After all inferences are done, run post-processing
-    concatenate_chunks_to_sequence_output()
