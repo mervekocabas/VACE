@@ -392,7 +392,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         save_video_frames(video, output_dir)       
        
 if __name__ == "__main__":
-    csv_path = "./vace_bedlam_100_dataset/final_metadata.csv"
+    csv_path = "./vace_bedlam_100_dataset/parallel_1.csv"
     df = pd.read_csv(csv_path, delimiter=';')
 
     for idx, row in df.iterrows():

@@ -15,8 +15,6 @@ import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
 
-import argparse
-
 # 1. Prepare pipeline
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
@@ -128,8 +126,8 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 def concatenate_chunks_to_sequence_output():
-    base_result_dir = Path("results/diffsynth_finvers")
-    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_finvers")
+    base_result_dir = Path("results/diffsynth_hands")
+    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_hands")
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
@@ -141,75 +139,54 @@ def concatenate_chunks_to_sequence_output():
                 continue
 
             output_img_dir = final_output_dir / scene_path.name / seq_path.name / "img"
-            output_src_img_dir = final_output_dir / scene_path.name / seq_path.name / "src_img"
             output_img_dir.mkdir(parents=True, exist_ok=True)
-            output_src_img_dir.mkdir(parents=True, exist_ok=True)
 
             all_frame_files = []
-            all_src_frame_files = []
-
             chunk_dirs = sorted(seq_path.glob("chunk_*"), key=lambda x: int(x.name.split('_')[1]))
             
             for chunk_dir in chunk_dirs:
                 chunk_name = chunk_dir.name
                 frames_dir = chunk_dir / "frames"
-                src_frames_dir = chunk_dir / "src_frames"
+                if not frames_dir.exists():
+                    continue
 
-                frame_files = sorted(frames_dir.glob("frame_*.jpg")) if frames_dir.exists() else []
-                src_frame_files = sorted(src_frames_dir.glob("frame_*.jpg")) if src_frames_dir.exists() else []
+                frame_files = sorted(frames_dir.glob("frame_*.jpg"))
 
                 if chunk_name == "chunk_0":
+                    # keep all frames
                     all_frame_files.extend(frame_files)
-                    all_src_frame_files.extend(src_frame_files)
                 elif "plus" in chunk_name:
+                    # Extract x from plus_x
                     match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
-                    x = int(match.group(1)) if match else 5
+                    x = int(match.group(1)) if match else 5  # fallback to 5 if no match
 
+                    # Remove last 5 frames from previous chunk before adding this chunk's frames
                     if len(all_frame_files) > 0:
                         all_frame_files = all_frame_files[:-5]
-                        all_src_frame_files = all_src_frame_files[:-5]
 
+                    # Skip first x frames of this plus chunk
                     frame_files = frame_files[x+5:]
-                    src_frame_files = src_frame_files[x+5:]
-
                     all_frame_files.extend(frame_files)
-                    all_src_frame_files.extend(src_frame_files)
                 else:
+                    # Normal chunks except chunk_0: skip first 5 frames
                     frame_files = frame_files[5:]
-                    src_frame_files = src_frame_files[5:]
-
                     all_frame_files.extend(frame_files)
-                    all_src_frame_files.extend(src_frame_files)
 
-            # Save target (output) frames
+            # Symlink or copy into final folder with continuous frame numbering
             for i, frame_path in enumerate(all_frame_files):
                 target_path = output_img_dir / f"frame_{i:06d}.jpg"
                 if not target_path.exists():
                     try:
                         target_path.symlink_to(frame_path.resolve())
                     except FileExistsError:
-                        pass
+                        pass  # Skip if symlink already exists
 
-            # Save source frames
-            for i, src_path in enumerate(all_src_frame_files):
-                target_src_path = output_src_img_dir / f"frame_{i:06d}.jpg"
-                if not target_src_path.exists():
-                    try:
-                        target_src_path.symlink_to(src_path.resolve())
-                    except FileExistsError:
-                        pass
-
-            print(f"[✓] Combined {len(all_frame_files)} output frames → {output_img_dir}")
-            print(f"[✓] Combined {len(all_src_frame_files)} source frames → {output_src_img_dir}")
-
-            # Save videos
+            print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
+            
+            # Also save video from these frames
             final_video_path = final_output_dir / scene_path.name / seq_path.name / "out_video.mp4"
-            final_src_video_path = final_output_dir / scene_path.name / seq_path.name / "src_video.mp4"
-            frames_to_video(output_img_dir, final_video_path, fps=30)
-            frames_to_video(output_src_img_dir, final_src_video_path, fps=30)
-
-            print(f"[✓] Saved output video → {final_video_path}")
-            print(f"[✓] Saved source video → {final_src_video_path}")
+            frames_to_video(output_img_dir, final_video_path, fps=16)
+            print(f"[✓] Saved combined video → {final_video_path}")
 
 def get_frame_chunks(frame_files: List[Path], chunk_size: int = 81, overlap: int = 5) -> List[Tuple[str, List[Path], List[int]]]:
     """
@@ -287,7 +264,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         return
 
     # Build path to frame directory
-    frame_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_framebyframe") / scene_name / f"seq_{seq_number.zfill(6)}"
+    frame_dir = Path("./vace_bedlam_100_dataset/diffsynth_hand") / scene_name / f"seq_{seq_number.zfill(6)}"
     
     if not frame_dir.exists():
         print(f"[!] Missing frame directory: {frame_dir}")
@@ -317,7 +294,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
     
     # Process each chunk
     for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
-        output_dir = Path(f"results/diffsynth_finvers/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_hands/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_video = output_dir / "out_video.mp4"
         if output_video.exists():
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
@@ -340,7 +317,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx - 1][0]
-            prev_output_dir = Path(f"results/diffsynth_finvers/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            prev_output_dir = Path(f"results/diffsynth_hands/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
@@ -376,7 +353,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
-        output_dir = Path(f"results/diffsynth_finvers/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_hands/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Copy frames into output_dir/frames/
@@ -396,26 +373,14 @@ def run_inference(idx: int, video_name: str, prompt: str):
             src_video = frames_to_video(src_frames_dir, video_output_path, fps=16)
             
         control_video = VideoData(video_output_path, height=height_frame, width=width_frame)
-            
         if gen:
             control_video_gen = VideoData(video_output_path_gen, height=height_frame, width=width_frame)
             control_video = concatenate_videos(control_video_gen, control_video)
-            
-        white_image = Image.new("RGB", (width_frame, height_frame), color=(255, 255, 255))
-        black_image = Image.new("RGB", (width_frame, height_frame), color=(0, 0, 0))
-        # Create a list of 81 such white images
         
-        if gen: 
-            control_mask = [black_image.copy() for _ in range(5)]
-            control_mask.extend([white_image.copy() for _ in range(76)])
-        else:
-            control_mask = [white_image.copy() for _ in range(81)]
-            
         # 4. Run inference
         video = pipe(
             prompt=prompt,
             vace_video = control_video,
-            vace_video_mask = control_mask,
             seed=2025, tiled=True,
             height = height_frame,
             width = width_frame,
@@ -427,17 +392,11 @@ def run_inference(idx: int, video_name: str, prompt: str):
         save_video_frames(video, output_dir)       
        
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run inference from a metadata CSV file.")
-    parser.add_argument("--csv_path", type=str, default="./vace_bedlam_100_dataset/final_metadata.csv", help="Path to the input CSV file")
-    
-    args = parser.parse_args()
-    
-    df = pd.read_csv(args.csv_path, delimiter=';')
+    csv_path = "./vace_bedlam_100_dataset/parallel_2.csv"
+    df = pd.read_csv(csv_path, delimiter=';')
 
     for idx, row in df.iterrows():
         run_inference(idx, row["file_name"], row["text"])
-
+    
     # After all inferences are done, run post-processing
     concatenate_chunks_to_sequence_output()
-    
-   
