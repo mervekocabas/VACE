@@ -126,8 +126,8 @@ def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf
     return video_tensor
 
 def concatenate_chunks_to_sequence_output():
-    base_result_dir = Path("results/diffsynth")
-    final_output_dir = Path("results/bedlam_framebyframe_diffsynth")
+    base_result_dir = Path("results/diffsynth_hands")
+    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_hands")
     final_output_dir.mkdir(parents=True, exist_ok=True)
 
     for scene_path in base_result_dir.iterdir():
@@ -264,7 +264,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         return
 
     # Build path to frame directory
-    frame_dir = Path("./vace_bedlam_100_dataset/bedlam_100_videos_face_hand_vids_dwpose_framebyframe") / scene_name / f"seq_{seq_number.zfill(6)}"
+    frame_dir = Path("./vace_bedlam_100_dataset/diffsynth_hand") / scene_name / f"seq_{seq_number.zfill(6)}"
     
     if not frame_dir.exists():
         print(f"[!] Missing frame directory: {frame_dir}")
@@ -294,7 +294,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
     
     # Process each chunk
     for chunk_idx, (chunk_name, frame_chunk, original_frames) in enumerate(chunks):
-        output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_hands/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_video = output_dir / "out_video.mp4"
         if output_video.exists():
             print(f"[✓] Skipping {chunk_name} — output video already exists.")
@@ -317,7 +317,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         
         if chunk_idx != 0:
             prev_chunk_name = chunks[chunk_idx - 1][0]
-            prev_output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
+            prev_output_dir = Path(f"results/diffsynth_hands/{scene_name}/seq_{seq_number}/{prev_chunk_name}/frames")
             
             if prev_output_dir.exists():
                 prev_frames = sorted(prev_output_dir.glob("frame_*.jpg"))
@@ -353,7 +353,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
             (src_frames_dir / f"frame_{i:06d}.jpg").symlink_to(frame_path.resolve())
         
         # Create output directory with chunk name
-        output_dir = Path(f"results/diffsynth/{scene_name}/seq_{seq_number}/{chunk_name}")
+        output_dir = Path(f"results/diffsynth_hands/{scene_name}/seq_{seq_number}/{chunk_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
         
         # Copy frames into output_dir/frames/
