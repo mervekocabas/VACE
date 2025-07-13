@@ -15,6 +15,106 @@ import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
 
+def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
+    frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
+    if not frame_paths:
+        print(f"[!] No frames found in {frame_dir}")
+        return
+
+    frames = []
+    for frame_path in frame_paths:
+        img = cv2.imread(str(frame_path))
+        if img is None:
+            print(f"[!] Failed to read: {frame_path}")
+            continue
+        # Convert BGR (OpenCV) to RGB for imageio
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        frames.append(img_rgb)
+
+    if not frames:
+        print("[!] No valid frames to write.")
+        return
+
+    output_video_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with iio.imopen(output_video_path, "w", plugin="pyav") as writer:
+        writer.init_video_stream("libx264", fps=fps)
+        writer._video_stream.options = {"crf": str(crf)}
+        for frame in frames:
+            writer.write_frame(np.ascontiguousarray(frame, dtype=np.uint8))
+            
+    video_np = np.stack(frames)  # Shape: (num_frames, H, W, C)
+    video_np = np.transpose(video_np, (0, 3, 1, 2))  # Now: (num_frames, C, H, W)
+
+    # Convert to torch tensor (optional)
+    video_tensor = torch.from_numpy(video_np).float()
+    return video_tensor
+
+
+def concatenate_chunks_to_sequence_output():
+    base_result_dir = Path("results/diffsynth_hands")
+    final_output_dir = Path("results/bedlam_framebyframe_diffsynth_hands")
+    final_output_dir.mkdir(parents=True, exist_ok=True)
+
+    for scene_path in base_result_dir.iterdir():
+        if not scene_path.is_dir():
+            continue
+
+        for seq_path in scene_path.iterdir():
+            if not seq_path.is_dir():
+                continue
+
+            output_img_dir = final_output_dir / scene_path.name / seq_path.name / "img"
+            output_img_dir.mkdir(parents=True, exist_ok=True)
+
+            all_frame_files = []
+            chunk_dirs = sorted(seq_path.glob("chunk_*"), key=lambda x: int(x.name.split('_')[1]))
+            
+            for chunk_dir in chunk_dirs:
+                chunk_name = chunk_dir.name
+                frames_dir = chunk_dir / "frames"
+                if not frames_dir.exists():
+                    continue
+
+                frame_files = sorted(frames_dir.glob("frame_*.jpg"))
+
+                if chunk_name == "chunk_0":
+                    # keep all frames
+                    all_frame_files.extend(frame_files)
+                elif "plus" in chunk_name:
+                    # Extract x from plus_x
+                    match = re.match(r"chunk_\d+_plus_(\d+)", chunk_name)
+                    x = int(match.group(1)) if match else 5  # fallback to 5 if no match
+
+                    # Remove last 5 frames from previous chunk before adding this chunk's frames
+                    if len(all_frame_files) > 0:
+                        all_frame_files = all_frame_files[:-5]
+
+                    # Skip first x frames of this plus chunk
+                    frame_files = frame_files[x+5:]
+                    all_frame_files.extend(frame_files)
+                else:
+                    # Normal chunks except chunk_0: skip first 5 frames
+                    frame_files = frame_files[5:]
+                    all_frame_files.extend(frame_files)
+
+            # Symlink or copy into final folder with continuous frame numbering
+            for i, frame_path in enumerate(all_frame_files):
+                target_path = output_img_dir / f"frame_{i:06d}.jpg"
+                if not target_path.exists():
+                    try:
+                        target_path.symlink_to(frame_path.resolve())
+                    except FileExistsError:
+                        pass  # Skip if symlink already exists
+
+            print(f"[✓] Combined {len(all_frame_files)} frames → {output_img_dir}")
+            
+            # Also save video from these frames
+            final_video_path = final_output_dir / scene_path.name / seq_path.name / "out_video.mp4"
+            frames_to_video(output_img_dir, final_video_path, fps=16)
+            print(f"[✓] Saved combined video → {final_video_path}")
+
+'''
 # 1. Prepare pipeline
 pipe = WanVideoPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
@@ -390,7 +490,7 @@ def run_inference(idx: int, video_name: str, prompt: str):
         )
         
         save_video_frames(video, output_dir)       
-       
+  '''     
 if __name__ == "__main__":
     #csv_path = "./vace_bedlam_100_dataset/parallel_2.csv"
     #df = pd.read_csv(csv_path, delimiter=';')
