@@ -15,7 +15,7 @@ import imageio.v3 as iio
 
 from vace.models.utils.preprocessor import VaceVideoProcessor
 
-def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 16, crf: int = 23):
+def frames_to_video(frame_dir: Path, output_video_path: Path, fps: int = 30, crf: int = 23):
     frame_paths = sorted(frame_dir.glob("frame_*.jpg"))
     if not frame_paths:
         print(f"[!] No frames found in {frame_dir}")
