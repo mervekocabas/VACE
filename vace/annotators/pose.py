@@ -188,7 +188,7 @@ class PoseAnnotator:
         df = pd.DataFrame(data, columns=['frame_id', 'body_id', 'keypoint_id', 'x', 'y', 'subset'])
         
         # Save to CSV
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'results', 'pose_data_diffsynth')
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'dwpose', 'pose_data_diffsynth')
         os.makedirs(output_dir, exist_ok=True)
         # Create filename with input filename if provided
         if input_filename:
