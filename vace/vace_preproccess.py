@@ -221,7 +221,7 @@ def main(args):
     # output data
     save_fps = fps if fps is not None else save_fps
     if args.pre_save_dir is None:
-        args.pre_save_dir
+        pre_save_dir = os.path.join(args.pre_save_dir,  input_filename)
         #pre_save_dir = os.path.join('processed', 'diffsynth_video_pose', input_filename)
         #pre_save_dir = os.path.join('processed', 'generated_firstframe')
     else:
